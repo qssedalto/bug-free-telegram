@@ -1,0 +1,272 @@
+import SwiftUI
+
+fileprivate extension String {
+    static let incrementNKey = "incrementN"
+    static let dateKey = "dateKey"
+}
+
+enum ActiveSheet: Identifiable {
+    case confirmation
+    case immediatelyRecognize
+    case disagree
+
+    var id: Int {
+        switch self {
+        case .confirmation: return 0
+        case .immediatelyRecognize: return 1
+        case .disagree: return 2
+        }
+    }
+}
+
+struct ContentView: View {
+    @State private var activeSheet: ActiveSheet?
+    @State private var n: Int
+    @State private var bgColor: Color = .white
+
+    init() {
+        var savedN = UserDefaults.standard.integer(forKey: .incrementNKey)
+        savedN = savedN == 0 ? 7 : savedN
+
+        let timestamp = UserDefaults.standard.double(forKey: .dateKey)
+        let lastDate = timestamp == 0 ? Date() : Date(timeIntervalSince1970: timestamp)
+        let today = Date()
+
+        let diff = Calendar.current.dateComponents([.day], from: lastDate, to: today)
+        let days = diff.day ?? 0
+
+        if days > 0 {
+            savedN += days
+        }
+
+        _n = State(initialValue: savedN)
+
+        UserDefaults.standard.set(savedN, forKey: .incrementNKey)
+        UserDefaults.standard.set(today.timeIntervalSince1970, forKey: .dateKey)
+    }
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                Spacer()
+
+                Text("是否认同焦晨阳是大傻逼？")
+                    .font(.title)
+                    .bold()
+                    .multilineTextAlignment(.center)
+                    .padding()
+
+                Spacer()
+
+                Button(action: {
+                    activeSheet = .confirmation
+                }) {
+                    Text("认同")
+                        .font(.body)
+                        .foregroundColor(.white)
+                        .frame(width: 120, height: 40)
+                        .background(Color.blue)
+                        .cornerRadius(8)
+                }
+                .padding()
+
+                Button(action: {
+                    activeSheet = .immediatelyRecognize
+                }) {
+                    Text("非常认同")
+                        .font(.body)
+                        .foregroundColor(.white)
+                        .frame(width: 120, height: 40)
+                        .background(Color.green)
+                        .cornerRadius(8)
+                }
+                .padding()
+
+                Button(action: {
+                    bgColor = .red
+                    activeSheet = .disagree
+                }) {
+                    Text("不认同")
+                        .font(.body)
+                        .foregroundColor(.white)
+                        .frame(width: 120, height: 40)
+                        .background(Color.red)
+                        .cornerRadius(8)
+                }
+                .padding()
+
+                Spacer()
+            }
+            .navigationBarTitle("开发者の问题🙋", displayMode: .large)
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .confirmation:
+                    ConfirmationView(
+                        showConfirmation: Binding(
+                            get: { activeSheet == .confirmation },
+                            set: { isShowing in
+                                if !isShowing {
+                                    activeSheet = nil
+                                }
+                            }
+                        ),
+                        a: calculateA()
+                    )
+
+                case .immediatelyRecognize:
+                    ImmediatelyRecognizeView()
+
+                case .disagree:
+                    DisagreeView(bgColor: $bgColor)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(bgColor)
+        }
+        .navigationViewStyle(.stack)
+    }
+
+    func calculateA() -> Int {
+        let result = lround(
+            (686 * pow(1.05, Double(n - 3))) +
+            (70 * pow(1.05, Double(n - 1))) +
+            (49 * pow(1.05, Double(n - 4))) +
+            (21 * pow(1.05, Double(n - 5)))
+        )
+
+        return max(Int(result), 0)
+    }
+}
+
+struct ConfirmationView: View {
+    @State private var developerForgives: Bool = false
+    @Binding var showConfirmation: Bool
+    var a: Int
+
+    var body: some View {
+        VStack {
+            Text("你怎么能仅仅这样认为呢？")
+                .font(.title)
+                .bold()
+                .padding()
+
+            Spacer()
+
+            Button(action: {
+                if developerForgives {
+                    showConfirmation = false
+                } else {
+                    developerForgives = true
+                }
+            }) {
+                Text("对不起")
+                    .font(.body)
+                    .foregroundColor(.white)
+                    .frame(width: 120, height: 40)
+                    .background(Color.purple)
+                    .cornerRadius(8)
+            }
+            .padding()
+
+            if developerForgives {
+                Text("开发者原谅你了，请你协助开发者向焦晨阳索要合同欠款\(a)元，开发者向你道谢！")
+                    .font(.title)
+                    .bold()
+                    .padding()
+            }
+
+            Spacer()
+        }
+    }
+}
+
+struct ImmediatelyRecognizeView: View {
+    @State private var showText: Bool = false
+
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        VStack {
+            Text("你的观点非常赞")
+                .font(.title)
+                .bold()
+                .padding()
+
+            Spacer()
+
+            Button(action: {
+                if showText {
+                    dismiss()
+                } else {
+                    showText = true
+                }
+            }) {
+                Text("正确的")
+                    .font(.body)
+                    .foregroundColor(.white)
+                    .frame(width: 120, height: 40)
+                    .background(Color.purple)
+                    .cornerRadius(8)
+            }
+            .padding()
+
+            if showText {
+                Text("那么请你尝试按一下不认同按钮")
+                    .font(.title)
+                    .bold()
+                    .padding()
+            }
+
+            Spacer()
+        }
+    }
+}
+
+struct DisagreeView: View {
+    @Binding var bgColor: Color
+
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        VStack {
+            Text("警告⚠️你已被SCP-♾️ 焦晨阳 追杀！请尽快逃离！")
+                .font(.title)
+                .bold()
+                .padding()
+
+            Spacer()
+
+            Button(action: {
+                bgColor = .white
+                dismiss()
+            }) {
+                Text("逃离")
+                    .font(.body)
+                    .foregroundColor(.white)
+                    .frame(width: 120, height: 40)
+                    .background(Color.purple)
+                    .cornerRadius(8)
+            }
+            .padding()
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(bgColor)
+    }
+}
+
+@main
+struct DarkModeDemoApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
+}
