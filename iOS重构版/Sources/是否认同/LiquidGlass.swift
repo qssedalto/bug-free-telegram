@@ -79,7 +79,7 @@ extension View {
 struct LiquidGlassBackdrop: View {
     @EnvironmentObject private var preferences: AppPreferences
 
-    var accent: Color?
+    var accent: Color? = nil
     var intense = false
 
     private var base: Color {
