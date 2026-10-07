@@ -18,11 +18,6 @@ struct ContentView: View {
     @State private var secretMessage: String?
 
     private var amount: AmountDisplay { DebtEngine.amount(on: Date(), preferences: preferences) }
-    private var surface: Color {
-        if preferences.theme == .black { return .black }
-        return Color(uiColor: .systemGroupedBackground)
-    }
-
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -38,7 +33,7 @@ struct ContentView: View {
                 .frame(maxWidth: 1300)
                 .frame(maxWidth: .infinity)
             }
-            .background(surface.ignoresSafeArea())
+            .background { LiquidGlassBackdrop() }
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button { showDashboard = true } label: { Label("数据面板", systemImage: "chart.xyaxis.line") }
@@ -68,7 +63,12 @@ struct ContentView: View {
 
     private var header: some View {
         HStack(spacing: 14) {
-            BrandIconView(size: sizeClass == .regular ? 74 : 58)
+            BrandIconView(size: sizeClass == .regular ? 66 : 52)
+                .padding(sizeClass == .regular ? 10 : 8)
+                .liquidGlassSurface(
+                    cornerRadius: sizeClass == .regular ? 24 : 20,
+                    tint: preferences.accentColor.opacity(0.10)
+                )
             VStack(alignment: .leading, spacing: 4) {
                 Text(preferences.windowTitle)
                     .font(.system(size: 30 * preferences.fontScale, weight: .black, design: .rounded))
@@ -89,7 +89,7 @@ struct ContentView: View {
             Text("1.1.0")
                 .font(.caption.monospacedDigit().weight(.bold))
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(preferences.accentColor.opacity(0.14), in: Capsule())
+                .liquidGlassCapsule(tint: preferences.accentColor.opacity(0.16))
         }
         .padding(.top, 8)
     }
@@ -132,12 +132,10 @@ struct ContentView: View {
             } label: {
                 Label(branch.rawValue, systemImage: branch.symbol)
                     .font(.headline.weight(.bold))
-                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, minHeight: 52)
                     .padding(.horizontal, 18)
-                    .background(branch.color.gradient, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
-            .buttonStyle(BounceButtonStyle(reduceMotion: preferences.reduceMotion))
+            .liquidGlassButtonStyle(prominent: true, tint: branch.color)
             .accessibilityHint("进入\(branch.rawValue)剧情分支")
         }
     }
@@ -244,21 +242,46 @@ struct BrandIconView: View {
 struct Card<Content: View>: View {
     @EnvironmentObject private var preferences: AppPreferences
     @ViewBuilder let content: Content
+
     var body: some View {
         content
-            .background(preferences.theme == .black ? Color.white.opacity(0.075) : Color(uiColor: .secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(preferences.highContrast ? preferences.accentColor.opacity(0.8) : Color.primary.opacity(0.09), lineWidth: preferences.highContrast ? 2 : 1))
+            .liquidGlassSurface(
+                cornerRadius: 24,
+                tint: preferences.accentColor.opacity(0.055)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(
+                        preferences.highContrast ? preferences.accentColor.opacity(0.82) : Color.white.opacity(0.10),
+                        lineWidth: preferences.highContrast ? 2 : 0.7
+                    )
+            )
     }
 }
 
 struct CardButton<Content: View>: View {
+    @EnvironmentObject private var preferences: AppPreferences
     let action: () -> Void
     @ViewBuilder let content: Content
+
     var body: some View {
-        Button(action: action) { Card { content.padding(18) } }
-            .buttonStyle(.plain)
+        Button(action: action) {
+            content
+                .padding(18)
+                .liquidGlassSurface(
+                    cornerRadius: 24,
+                    tint: preferences.accentColor.opacity(0.07),
+                    interactive: true
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(
+                            preferences.highContrast ? preferences.accentColor.opacity(0.82) : Color.white.opacity(0.10),
+                            lineWidth: preferences.highContrast ? 2 : 0.7
+                        )
+                )
+        }
+        .buttonStyle(.plain)
     }
 }
 
