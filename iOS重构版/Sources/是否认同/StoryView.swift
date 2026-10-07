@@ -23,12 +23,14 @@ struct StorySheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 22) {
-                    branchHeader
-                    storyCard
-                    if isFinal && branch != .disagree { amountCard }
-                    if isFinal && branch == .disagree { escapeCard }
-                    actionButton
+                LiquidGlassContainer(spacing: 18) {
+                    VStack(spacing: 22) {
+                        branchHeader
+                        storyCard
+                        if isFinal && branch != .disagree { amountCard }
+                        if isFinal && branch == .disagree { escapeCard }
+                        actionButton
+                    }
                 }
                 .padding(24)
                 .frame(maxWidth: 900)
