@@ -102,7 +102,7 @@ struct ContentView: View {
                 HStack {
                     Label("今日问题", systemImage: "questionmark.bubble.fill")
                         .font(.headline)
-                        .foregroundStyle(preferences.accentColor)
+                        .foregroundStyle(preferences.accentControlColor)
                     Spacer()
                     Text(Date.now.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption.weight(.medium)).foregroundStyle(.secondary)
@@ -171,7 +171,7 @@ struct ContentView: View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: sizeClass == .regular ? 330 : 280), spacing: 14)], spacing: 14) {
             CardButton(action: { showDashboard = true }) {
                 VStack(alignment: .leading, spacing: 9) {
-                    Label("当前欠款", systemImage: "banknote.fill").font(.headline).foregroundStyle(preferences.accentColor)
+                    Label("当前欠款", systemImage: "banknote.fill").font(.headline).foregroundStyle(preferences.accentControlColor)
                     Text("￥\(amount.grouped) 元")
                         .font(.title2.monospacedDigit().weight(.black))
                         .lineLimit(2).minimumScaleFactor(0.42)
@@ -183,7 +183,7 @@ struct ContentView: View {
 
             CardButton(action: { showDashboard = true }) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Label("近七日增长", systemImage: "chart.line.uptrend.xyaxis").font(.headline).foregroundStyle(preferences.accentColor)
+                    Label("近七日增长", systemImage: "chart.line.uptrend.xyaxis").font(.headline).foregroundStyle(preferences.accentControlColor)
                     MiniTrend(amounts: (0...6).map { DebtEngine.amount(on: Date().addingDays(-6 + $0), preferences: preferences) })
                         .frame(height: 58)
                     HStack { Text("7 日前"); Spacer(); Text("今天 ↗") }.font(.caption).foregroundStyle(.secondary)
@@ -193,7 +193,7 @@ struct ContentView: View {
 
             CardButton(action: { showDashboard = true }) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("档案概览", systemImage: "archivebox.fill").font(.headline).foregroundStyle(preferences.accentColor)
+                    Label("档案概览", systemImage: "archivebox.fill").font(.headline).foregroundStyle(preferences.accentControlColor)
                     Text("连续签到 \(runtime.streak) 天").font(.title3.weight(.bold))
                     Text("\(runtime.choices.count) 条选择 · \(runtime.achievements.count) 项成就")
                         .font(.caption).foregroundStyle(.secondary)
@@ -207,7 +207,7 @@ struct ContentView: View {
         let quotes = ["每一个数字都有它的故事。", "今天的选择会成为明天的历史。", "三个按钮记得三条不同的时间线。", "历史不会评价你的答案，只负责记住。", "2023-06-21：档案编号 1111。", "圆角之内，剧情仍在继续。"]
         return Card {
             HStack(spacing: 13) {
-                Image(systemName: "quote.opening").font(.title2).foregroundStyle(preferences.accentColor)
+                Image(systemName: "quote.opening").font(.title2).foregroundStyle(preferences.accentControlColor)
                 Text(quotes[Calendar.current.component(.day, from: Date()) % quotes.count])
                     .font(.callout.weight(.semibold))
                 Spacer()
