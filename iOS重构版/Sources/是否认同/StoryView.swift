@@ -34,7 +34,12 @@ struct StorySheet: View {
                 .frame(maxWidth: 900)
                 .frame(maxWidth: .infinity)
             }
-            .background(background.ignoresSafeArea())
+            .background {
+                LiquidGlassBackdrop(
+                    accent: branch == .disagree ? .red : preferences.accentColor,
+                    intense: branch == .disagree
+                )
+            }
             .navigationTitle(page.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("关闭") { dismiss() } } }
@@ -57,12 +62,6 @@ struct StorySheet: View {
         .alert("已复制", isPresented: Binding(get: { copiedMessage != nil }, set: { if !$0 { copiedMessage = nil } })) {
             Button("好", role: .cancel) {}
         } message: { Text(copiedMessage ?? "") }
-    }
-
-    private var background: Color {
-        if branch == .disagree { return Color.red.opacity(preferences.theme == .light ? 0.92 : 0.48) }
-        if preferences.theme == .black { return .black }
-        return Color(uiColor: .systemGroupedBackground)
     }
 
     private var branchHeader: some View {
@@ -92,8 +91,14 @@ struct StorySheet: View {
         }
         .frame(maxWidth: .infinity, minHeight: 150)
         .padding(24)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(.white.opacity(0.2)))
+        .liquidGlassSurface(
+            cornerRadius: 26,
+            tint: branch.color.opacity(0.07)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
+        )
     }
 
     private var amountCard: some View {
@@ -122,14 +127,17 @@ struct StorySheet: View {
             }
         }
         .padding(22)
-        .background(preferences.accentColor.opacity(0.11), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .liquidGlassSurface(
+            cornerRadius: 24,
+            tint: preferences.accentColor.opacity(0.11)
+        )
     }
 
     @ViewBuilder private var copyButtons: some View {
         Button { copy("￥\(amount.grouped) 元", label: "人民币金额") } label: { Label("复制人民币", systemImage: "doc.on.doc") }
-            .buttonStyle(.borderedProminent)
+            .liquidGlassButtonStyle(prominent: true, tint: preferences.accentColor)
         Button { copy("\(quote.btc) BTC", label: "BTC 数值") } label: { Label("复制 BTC", systemImage: "bitcoinsign.circle") }
-            .buttonStyle(.bordered)
+            .liquidGlassButtonStyle(tint: preferences.accentColor)
             .disabled(quote.btc == "—")
     }
 
@@ -151,7 +159,10 @@ struct StorySheet: View {
             }
         }
         .padding(18)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .liquidGlassSurface(
+            cornerRadius: 24,
+            tint: Color.red.opacity(0.10)
+        )
     }
 
     private var actionButton: some View {
@@ -167,12 +178,13 @@ struct StorySheet: View {
         } label: {
             Text(isFinal ? (branch == .disagree ? "安全离开" : "完成归档") : page.button)
                 .font(.headline.weight(.black))
-                .foregroundStyle(.white)
                 .frame(maxWidth: 360, minHeight: 54)
-                .background((branch == .disagree ? Color.purple : preferences.accentColor).gradient,
-                            in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(.horizontal, 14)
         }
-        .buttonStyle(BounceButtonStyle(reduceMotion: preferences.reduceMotion))
+        .liquidGlassButtonStyle(
+            prominent: true,
+            tint: branch == .disagree ? .purple : preferences.accentColor
+        )
     }
 
     private func copy(_ text: String, label: String) {
