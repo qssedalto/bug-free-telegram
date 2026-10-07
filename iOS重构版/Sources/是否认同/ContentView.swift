@@ -21,12 +21,14 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 18) {
-                    header
-                    questionCard
-                    progressSection
-                    dashboardGrid
-                    quoteCard
+                LiquidGlassContainer(spacing: 18) {
+                    VStack(spacing: 18) {
+                        header
+                        questionCard
+                        progressSection
+                        dashboardGrid
+                        quoteCard
+                    }
                 }
                 .padding(.horizontal, sizeClass == .regular ? 30 : 16)
                 .padding(.bottom, 32)
