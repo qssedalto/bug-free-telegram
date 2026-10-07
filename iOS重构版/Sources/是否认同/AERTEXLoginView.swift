@@ -1,0 +1,121 @@
+import SwiftUI
+
+struct AERTEXLoginView: View {
+    @EnvironmentObject private var auth: AERTEXAuthStore
+    @EnvironmentObject private var preferences: AppPreferences
+
+    @State private var email = ""
+    @State private var password = ""
+    @State private var isSubmitting = false
+    @FocusState private var focusedField: Field?
+
+    private enum Field {
+        case email
+        case password
+    }
+
+    var body: some View {
+        ZStack {
+            background
+
+            ScrollView {
+                VStack(spacing: 24) {
+                    Spacer(minLength: 52)
+
+                    BrandIconView(size: 82)
+
+                    VStack(spacing: 8) {
+                        Text("AERTEX")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .tracking(2.2)
+                            .foregroundStyle(.secondary)
+                        Text("登录以继续使用「是否认同」")
+                            .font(.system(size: 28, weight: .black, design: .rounded))
+                            .multilineTextAlignment(.center)
+                        Text("使用你的 AERTEX 账户验证身份。密码只用于本次 HTTPS 登录，不会保存在设备上。")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    VStack(spacing: 14) {
+                        TextField("AERTEX 邮箱", text: $email)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .keyboardType(.emailAddress)
+                            .textContentType(.username)
+                            .focused($focusedField, equals: .email)
+                            .submitLabel(.next)
+                            .onSubmit { focusedField = .password }
+                            .padding(15)
+                            .background(fieldBackground)
+
+                        SecureField("密码", text: $password)
+                            .textContentType(.password)
+                            .focused($focusedField, equals: .password)
+                            .submitLabel(.go)
+                            .onSubmit { submit() }
+                            .padding(15)
+                            .background(fieldBackground)
+
+                        if let error = auth.errorMessage, !error.isEmpty {
+                            Label(error, systemImage: "exclamationmark.triangle.fill")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.red)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+
+                        Button(action: submit) {
+                            HStack(spacing: 10) {
+                                if isSubmitting {
+                                    ProgressView().tint(.white)
+                                }
+                                Text(isSubmitting ? "正在登录…" : "登录 AERTEX")
+                                    .font(.headline.weight(.bold))
+                            }
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .background(preferences.accentColor.gradient, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isSubmitting || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
+                        .opacity(isSubmitting ? 0.8 : 1)
+                    }
+                    .frame(maxWidth: 460)
+
+                    VStack(spacing: 7) {
+                        Label("由 auth.qsseda.com 安全验证", systemImage: "lock.shield.fill")
+                        Text("登录成功后仅将会话刷新令牌保存到 iOS Keychain。")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                    Spacer(minLength: 40)
+                }
+                .padding(.horizontal, 24)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+    }
+
+    private var background: Color {
+        preferences.theme == .black ? .black : Color(uiColor: .systemGroupedBackground)
+    }
+
+    private var fieldBackground: some ShapeStyle {
+        Color(uiColor: .secondarySystemGroupedBackground)
+    }
+
+    private func submit() {
+        guard !isSubmitting else { return }
+        focusedField = nil
+        isSubmitting = true
+        Task {
+            let ok = await auth.login(email: email, password: password)
+            if ok { password = "" }
+            isSubmitting = false
+        }
+    }
+}
