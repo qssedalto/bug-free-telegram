@@ -17,7 +17,7 @@ struct AERTEXLoginView: View {
 
     var body: some View {
         ZStack {
-            background
+            LiquidGlassBackdrop(accent: preferences.accentColor, intense: true)
 
             ScrollView {
                 VStack(spacing: 24) {
@@ -49,7 +49,11 @@ struct AERTEXLoginView: View {
                             .submitLabel(.next)
                             .onSubmit { focusedField = .password }
                             .padding(15)
-                            .background(fieldBackground)
+                            .liquidGlassSurface(
+                                cornerRadius: 18,
+                                tint: preferences.accentColor.opacity(0.055),
+                                interactive: true
+                            )
 
                         SecureField("密码", text: $password)
                             .textContentType(.password)
@@ -57,7 +61,11 @@ struct AERTEXLoginView: View {
                             .submitLabel(.go)
                             .onSubmit { submit() }
                             .padding(15)
-                            .background(fieldBackground)
+                            .liquidGlassSurface(
+                                cornerRadius: 18,
+                                tint: preferences.accentColor.opacity(0.055),
+                                interactive: true
+                            )
 
                         if let error = auth.errorMessage, !error.isEmpty {
                             Label(error, systemImage: "exclamationmark.triangle.fill")
@@ -69,16 +77,15 @@ struct AERTEXLoginView: View {
                         Button(action: submit) {
                             HStack(spacing: 10) {
                                 if isSubmitting {
-                                    ProgressView().tint(.white)
+                                    ProgressView()
                                 }
                                 Text(isSubmitting ? "正在登录…" : "登录 AERTEX")
                                     .font(.headline.weight(.bold))
                             }
-                            .foregroundStyle(.white)
                             .frame(maxWidth: .infinity, minHeight: 52)
-                            .background(preferences.accentColor.gradient, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .padding(.horizontal, 12)
                         }
-                        .buttonStyle(.plain)
+                        .liquidGlassButtonStyle(prominent: true, tint: preferences.accentColor)
                         .disabled(isSubmitting || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
                         .opacity(isSubmitting ? 0.8 : 1)
                     }
@@ -99,14 +106,6 @@ struct AERTEXLoginView: View {
             }
         }
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
-    }
-
-    private var background: Color {
-        preferences.theme == .black ? .black : Color(uiColor: .systemGroupedBackground)
-    }
-
-    private var fieldBackground: some ShapeStyle {
-        Color(uiColor: .secondarySystemGroupedBackground)
     }
 
     private func submit() {

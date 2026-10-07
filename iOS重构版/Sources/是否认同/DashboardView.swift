@@ -25,18 +25,28 @@ struct DataDashboardView: View {
                     ForEach(DashboardTab.allCases) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                .padding()
+                .padding(10)
+                .liquidGlassSurface(
+                    cornerRadius: 20,
+                    tint: preferences.accentColor.opacity(0.06),
+                    interactive: true
+                )
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 10)
 
-                Group {
-                    switch tab {
-                    case .overview: overview
-                    case .trend: trend
-                    case .history: history
+                LiquidGlassContainer(spacing: 14) {
+                    Group {
+                        switch tab {
+                        case .overview: overview
+                        case .trend: trend
+                        case .history: history
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .background((preferences.theme == .black ? Color.black : Color(uiColor: .systemGroupedBackground)).ignoresSafeArea())
+            .background { LiquidGlassBackdrop() }
             .navigationTitle("数据面板")
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
         }
@@ -102,7 +112,8 @@ struct DataDashboardView: View {
                 marketLine("黄金重量", value: "\(market.goldTons) 吨")
                 Divider()
                 Text(market.source).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                Button("重新获取") { Task { await refreshMarket() } }.buttonStyle(.bordered)
+                Button("重新获取") { Task { await refreshMarket() } }
+                    .liquidGlassButtonStyle(tint: preferences.accentColor)
             }
         }
     }
@@ -183,7 +194,7 @@ struct DataDashboardView: View {
                     Label("重新开始剧情", systemImage: "arrow.counterclockwise.circle.fill")
                         .font(.headline).frame(maxWidth: 360, minHeight: 50)
                 }
-                .buttonStyle(.borderedProminent)
+                .liquidGlassButtonStyle(prominent: true, tint: .red)
             }
             .padding([.horizontal, .bottom])
             .frame(maxWidth: 1000).frame(maxWidth: .infinity)
