@@ -89,6 +89,8 @@ struct SettingsView: View {
                     Button("恢复默认设置", role: .destructive) { confirmDefaults = true }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background { LiquidGlassBackdrop() }
             .navigationTitle("设置")
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
         }
