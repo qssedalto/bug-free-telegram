@@ -41,6 +41,9 @@ struct AgreeQuestionApp: App {
                     await auth.restore()
                 }
             }
+            .task(id: auth.user?.accentId) {
+                preferences.applyAERTEXAccent(auth.user?.accentId)
+            }
         }
     }
 }
