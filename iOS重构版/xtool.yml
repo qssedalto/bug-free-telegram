@@ -1,0 +1,6 @@
+version: 1
+bundleID: com.tglab.shifourentong.ios
+product: 是否认同
+infoPath: Info.plist
+iconPath: Build/AppIcons/AppIcon1024.png
+

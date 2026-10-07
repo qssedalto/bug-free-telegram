@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>是否认同</RootNamespace>
+    <AssemblyName>是否认同.Android</AssemblyName>
+    <ApplicationTitle>是否认同</ApplicationTitle>
+    <ApplicationId>com.tglab.shifourentong</ApplicationId>
+    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationDisplayVersion>1.1.0</ApplicationDisplayVersion>
+    <Company>TGLab</Company>
+    <Authors>TGLab</Authors>
+    <Description>是否认同 Android 版</Description>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <AndroidUseAapt2>true</AndroidUseAapt2>
+    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- The Android AOT tool cannot create temporary files beneath this Chinese path. -->
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Windows版\DebtTimeline.cs" Link="Shared\DebtTimeline.cs" />
+    <Compile Include="..\Windows版\StoryContent.cs" Link="Shared\StoryContent.cs" />
+    <Compile Include="..\Windows版\BitcoinQuoteService.cs" Link="Shared\BitcoinQuoteService.cs" />
+    <Compile Include="..\Windows版\MarketConversionService.cs" Link="Shared\MarketConversionService.cs" />
+    <Compile Include="..\Windows版\NetworkRegionService.cs" Link="Shared\NetworkRegionService.cs" />
+    <Compile Include="..\Windows版\ChinaMarketSource.cs" Link="Shared\ChinaMarketSource.cs" />
+  </ItemGroup>
+</Project>
