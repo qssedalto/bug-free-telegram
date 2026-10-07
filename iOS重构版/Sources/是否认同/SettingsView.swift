@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var preferences: AppPreferences
+    @EnvironmentObject private var auth: AERTEXAuthStore
     @Environment(\.dismiss) private var dismiss
     @State private var confirmDefaults = false
 
@@ -18,6 +19,26 @@ struct SettingsView: View {
                         }
                     }
                     .padding(.vertical, 8)
+                }
+
+                Section("AERTEX 账户") {
+                    if let user = auth.user {
+                        LabeledContent("显示名称", value: user.displayName)
+                        if !user.username.isEmpty {
+                            LabeledContent("用户名", value: user.username)
+                        }
+                        LabeledContent("邮箱", value: user.email)
+                        LabeledContent("状态", value: user.status == "active" ? "正常" : user.status)
+                    } else {
+                        Label("当前会话不可用", systemImage: "person.crop.circle.badge.exclamationmark")
+                    }
+
+                    Button("退出 AERTEX", role: .destructive) {
+                        Task {
+                            await auth.logout()
+                            dismiss()
+                        }
+                    }
                 }
 
                 Section("金额与锚点") {
