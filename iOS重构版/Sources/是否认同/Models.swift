@@ -54,6 +54,7 @@ final class AppPreferences: ObservableObject {
 
     var currentAERTEXAccent: AERTEXAccent { AERTEXAccent.resolve(aertexAccentId) }
     var accentColor: Color { currentAERTEXAccent.color }
+    var accentControlColor: Color { currentAERTEXAccent.controlColor }
     var accentInkColor: Color { currentAERTEXAccent.inkColor }
     var accentName: String { currentAERTEXAccent.displayName(english: english) }
     var colorScheme: ColorScheme? {
