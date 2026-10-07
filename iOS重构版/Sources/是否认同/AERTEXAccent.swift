@@ -11,6 +11,29 @@ struct AERTEXAccent: Identifiable, Equatable, Hashable {
     var color: Color { Color(aertexHex: hex) }
     var inkColor: Color { Color(aertexHex: inkHex) }
 
+    /// Exact main-site color is kept for surfaces; controls get a contrast-safe derivative
+    /// so very light/very dark iPhone finishes remain legible in both appearances.
+    var controlColor: Color {
+        let (r, g, b) = Self.rgb(hex)
+        let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+        if luminance > 0.78 {
+            let factor = 0.68
+            return Color(red: r * factor, green: g * factor, blue: b * factor)
+        }
+
+        if luminance < 0.055 {
+            let lift = 0.22
+            return Color(
+                red: r + (1 - r) * lift,
+                green: g + (1 - g) * lift,
+                blue: b + (1 - b) * lift
+            )
+        }
+
+        return color
+    }
+
     func displayName(english: Bool) -> String {
         english ? nameEn : nameZh
     }
@@ -377,6 +400,17 @@ struct AERTEXAccent: Identifiable, Equatable, Hashable {
     static func resolve(_ id: String?) -> AERTEXAccent {
         guard let id, let accent = byID[id] else { return defaultAccent }
         return accent
+    }
+
+    private static func rgb(_ hex: String) -> (Double, Double, Double) {
+        let cleaned = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        let value = UInt64(cleaned, radix: 16) ?? 0
+        guard cleaned.count == 6 else { return (0.60, 0.68, 0.96) }
+        return (
+            Double((value >> 16) & 0xFF) / 255,
+            Double((value >> 8) & 0xFF) / 255,
+            Double(value & 0xFF) / 255
+        )
     }
 }
 
