@@ -86,7 +86,7 @@ struct SettingsView: View {
 
                         Image(systemName: "checkmark.seal.fill")
                             .font(.title3)
-                            .foregroundStyle(preferences.accentColor)
+                            .foregroundStyle(preferences.accentControlColor)
                     }
                     .padding(.vertical, 5)
 
