@@ -35,11 +35,13 @@ struct DataDashboardView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 10)
 
-                Group {
-                    switch tab {
-                    case .overview: overview
-                    case .trend: trend
-                    case .history: history
+                LiquidGlassContainer(spacing: 14) {
+                    Group {
+                        switch tab {
+                        case .overview: overview
+                        case .trend: trend
+                        case .history: history
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
