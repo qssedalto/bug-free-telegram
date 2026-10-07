@@ -12,24 +12,6 @@ enum AppTheme: String, CaseIterable, Codable, Identifiable {
     var id: String { rawValue }
 }
 
-enum AccentChoice: String, CaseIterable, Codable, Identifiable {
-    case purple = "紫色"
-    case blue = "蓝色"
-    case orange = "橙色"
-    case pink = "粉色"
-    case green = "绿色"
-    var id: String { rawValue }
-    var color: Color {
-        switch self {
-        case .purple: return Color(red: 0.69, green: 0.32, blue: 0.87)
-        case .blue: return .blue
-        case .orange: return .orange
-        case .pink: return .pink
-        case .green: return .green
-        }
-    }
-}
-
 @MainActor
 final class AppPreferences: ObservableObject {
     @Published var startDate: Date { didSet { save() } }
@@ -38,7 +20,7 @@ final class AppPreferences: ObservableObject {
     @Published var question: String { didSet { save() } }
     @Published var customStory: String { didSet { save() } }
     @Published var theme: AppTheme { didSet { save() } }
-    @Published var accent: AccentChoice { didSet { save() } }
+    @Published private(set) var aertexAccentId: String { didSet { save() } }
     @Published var fontScale: Double { didSet { save() } }
     @Published var highContrast: Bool { didSet { save() } }
     @Published var reduceMotion: Bool { didSet { save() } }
@@ -59,7 +41,7 @@ final class AppPreferences: ObservableObject {
         question = defaults.string(forKey: "question") ?? "是否认为甲是大傻福？"
         customStory = defaults.string(forKey: "customStory") ?? ""
         theme = AppTheme(rawValue: defaults.string(forKey: "theme") ?? "") ?? .system
-        accent = AccentChoice(rawValue: defaults.string(forKey: "accent") ?? "") ?? .purple
+        aertexAccentId = defaults.string(forKey: "aertexAccentId") ?? AERTEXAccent.defaultID
         fontScale = defaults.object(forKey: "fontScale") == nil ? 1 : defaults.double(forKey: "fontScale")
         highContrast = defaults.bool(forKey: "highContrast")
         reduceMotion = defaults.bool(forKey: "reduceMotion")
@@ -70,7 +52,10 @@ final class AppPreferences: ObservableObject {
         migrateLegacyText()
     }
 
-    var accentColor: Color { accent.color }
+    var currentAERTEXAccent: AERTEXAccent { AERTEXAccent.resolve(aertexAccentId) }
+    var accentColor: Color { currentAERTEXAccent.color }
+    var accentInkColor: Color { currentAERTEXAccent.inkColor }
+    var accentName: String { currentAERTEXAccent.displayName(english: english) }
     var colorScheme: ColorScheme? {
         switch theme {
         case .system: return nil
@@ -87,6 +72,11 @@ final class AppPreferences: ObservableObject {
             ? "是否认为甲是大傻福？" : question
     }
 
+    func applyAERTEXAccent(_ id: String?) {
+        guard let id, AERTEXAccent.byID[id] != nil, id != aertexAccentId else { return }
+        aertexAccentId = id
+    }
+
     func restoreDefaults() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .current
@@ -96,7 +86,6 @@ final class AppPreferences: ObservableObject {
         question = "是否认为甲是大傻福？"
         customStory = ""
         theme = .system
-        accent = .purple
         fontScale = 1
         highContrast = false
         reduceMotion = false
@@ -119,7 +108,7 @@ final class AppPreferences: ObservableObject {
         defaults.set(question, forKey: "question")
         defaults.set(customStory, forKey: "customStory")
         defaults.set(theme.rawValue, forKey: "theme")
-        defaults.set(accent.rawValue, forKey: "accent")
+        defaults.set(aertexAccentId, forKey: "aertexAccentId")
         defaults.set(min(max(fontScale, 0.75), 1.75), forKey: "fontScale")
         defaults.set(highContrast, forKey: "highContrast")
         defaults.set(reduceMotion, forKey: "reduceMotion")
