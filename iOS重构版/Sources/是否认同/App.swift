@@ -12,9 +12,14 @@ struct AgreeQuestionApp: App {
             Group {
                 switch auth.state {
                 case .restoring:
-                    ProgressView("正在验证 AERTEX 会话…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+                    ZStack {
+                        LiquidGlassBackdrop(accent: preferences.accentColor, intense: true)
+                        ProgressView("正在验证 AERTEX 会话…")
+                            .font(.headline)
+                            .padding(.horizontal, 22)
+                            .padding(.vertical, 16)
+                            .liquidGlassCapsule(tint: preferences.accentColor.opacity(0.08))
+                    }
 
                 case .signedOut:
                     AERTEXLoginView()
