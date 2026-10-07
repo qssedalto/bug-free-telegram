@@ -23,19 +23,17 @@ struct AgreeQuestionApp: App {
 
                 case .signedOut:
                     AERTEXLoginView()
-                        .environmentObject(auth)
-                        .environmentObject(preferences)
 
                 case .signedIn:
                     ContentView()
-                        .environmentObject(preferences)
-                        .environmentObject(runtime)
-                        .environmentObject(auth)
                         .task {
                             runtime.checkIn(amount: DebtEngine.amount(on: Date(), preferences: preferences))
                         }
                 }
             }
+            .environmentObject(auth)
+            .environmentObject(preferences)
+            .environmentObject(runtime)
             .preferredColorScheme(preferences.colorScheme)
             .tint(preferences.accentColor)
             .task {
