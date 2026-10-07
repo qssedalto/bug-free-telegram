@@ -85,7 +85,7 @@ struct AERTEXLoginView: View {
                             .frame(maxWidth: .infinity, minHeight: 52)
                             .padding(.horizontal, 12)
                         }
-                        .liquidGlassButtonStyle(prominent: true, tint: preferences.accentColor)
+                        .liquidGlassButtonStyle(prominent: true, tint: preferences.accentControlColor)
                         .disabled(isSubmitting || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
                         .opacity(isSubmitting ? 0.8 : 1)
                     }
