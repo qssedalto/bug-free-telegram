@@ -75,6 +75,28 @@ extension View {
     }
 }
 
+/// Groups nearby custom glass surfaces so the system can render and morph them as one material layer.
+struct LiquidGlassContainer<Content: View>: View {
+    let spacing: CGFloat
+    let content: Content
+
+    init(spacing: CGFloat = 16, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
+        self.content = content()
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: spacing) {
+                content
+            }
+        } else {
+            content
+        }
+    }
+}
+
 /// Gives Liquid Glass something meaningful to refract instead of placing it over a flat fill.
 struct LiquidGlassBackdrop: View {
     @EnvironmentObject private var preferences: AppPreferences
