@@ -113,7 +113,7 @@ struct DataDashboardView: View {
                 Divider()
                 Text(market.source).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button("重新获取") { Task { await refreshMarket() } }
-                    .liquidGlassButtonStyle(tint: preferences.accentColor)
+                    .liquidGlassButtonStyle(tint: preferences.accentControlColor)
             }
         }
     }
@@ -205,7 +205,7 @@ struct DataDashboardView: View {
     private func dashboardCard<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
         Card {
             VStack(alignment: .leading, spacing: 12) {
-                Label(title, systemImage: icon).font(.headline).foregroundStyle(preferences.accentColor)
+                Label(title, systemImage: icon).font(.headline).foregroundStyle(preferences.accentControlColor)
                 Divider()
                 content()
             }

@@ -10,6 +10,7 @@ struct AERTEXUser: Codable, Equatable {
     let avatarUrl: String
     let role: String
     let status: String
+    let accentId: String?
 }
 
 private struct AERTEXTokenResponse: Decodable {
@@ -115,6 +116,26 @@ final class AERTEXAuthStore: ObservableObject {
             self.user = user
             self.state = .signedIn
             return true
+        } catch {
+            return false
+        }
+    }
+
+    func refreshAccount() async -> Bool {
+        if await validateSession() { return true }
+
+        guard let refreshToken = keychain.read(account: "refresh-token"), !refreshToken.isEmpty else {
+            return false
+        }
+
+        do {
+            let response: AERTEXTokenResponse = try await request(
+                path: "/api/app/refresh",
+                method: "POST",
+                jsonBody: ["refresh_token": refreshToken]
+            )
+            accept(response)
+            return isAuthenticated
         } catch {
             return false
         }

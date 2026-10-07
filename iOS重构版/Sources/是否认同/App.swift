@@ -35,11 +35,14 @@ struct AgreeQuestionApp: App {
             .environmentObject(preferences)
             .environmentObject(runtime)
             .preferredColorScheme(preferences.colorScheme)
-            .tint(preferences.accentColor)
+            .tint(preferences.accentControlColor)
             .task {
                 if auth.state == .restoring {
                     await auth.restore()
                 }
+            }
+            .task(id: auth.user?.accentId) {
+                preferences.applyAERTEXAccent(auth.user?.accentId)
             }
         }
     }

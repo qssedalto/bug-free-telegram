@@ -137,9 +137,9 @@ struct StorySheet: View {
 
     @ViewBuilder private var copyButtons: some View {
         Button { copy("￥\(amount.grouped) 元", label: "人民币金额") } label: { Label("复制人民币", systemImage: "doc.on.doc") }
-            .liquidGlassButtonStyle(prominent: true, tint: preferences.accentColor)
+            .liquidGlassButtonStyle(prominent: true, tint: preferences.accentControlColor)
         Button { copy("\(quote.btc) BTC", label: "BTC 数值") } label: { Label("复制 BTC", systemImage: "bitcoinsign.circle") }
-            .liquidGlassButtonStyle(tint: preferences.accentColor)
+            .liquidGlassButtonStyle(tint: preferences.accentControlColor)
             .disabled(quote.btc == "—")
     }
 
@@ -185,7 +185,7 @@ struct StorySheet: View {
         }
         .liquidGlassButtonStyle(
             prominent: true,
-            tint: branch == .disagree ? .purple : preferences.accentColor
+            tint: branch == .disagree ? .purple : preferences.accentControlColor
         )
     }
 
