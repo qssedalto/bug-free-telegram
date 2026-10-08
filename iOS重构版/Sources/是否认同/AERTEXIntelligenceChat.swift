@@ -44,6 +44,12 @@ struct AERTEXIntelligenceNativeView: View {
     @State private var conversations: [AERTEXConversation]?
     @State private var error: String?
     @State private var loading = false
+    @State private var renameId: String?
+    @State private var renameTitle = ""
+    @State private var showingRename = false
+    @State private var deleteId: String?
+    @State private var showingDelete = false
+    @State private var editing = false
 
     var body: some View {
         List {
@@ -84,6 +90,18 @@ struct AERTEXIntelligenceNativeView: View {
                             }
                             .padding(.vertical, 5)
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button("重命名") {
+                                renameId = conversation.id
+                                renameTitle = conversation.displayTitle
+                                showingRename = true
+                            }
+                            .tint(preferences.accentControlColor)
+                            Button("删除", role: .destructive) {
+                                deleteId = conversation.id
+                                showingDelete = true
+                            }
+                        }
                     }
                 }
             } else if loading {
@@ -109,6 +127,81 @@ struct AERTEXIntelligenceNativeView: View {
         }
         .refreshable { await load() }
         .task { if conversations == nil { await load() } }
+        .sheet(isPresented: $showingRename) {
+            NavigationStack {
+                Form {
+                    Section("对话标题") {
+                        TextField("输入新的会话标题", text: $renameTitle)
+                    }
+                }
+                .navigationTitle("重命名会话")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") { showingRename = false }
+                            .disabled(editing)
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("保存") {
+                            Task { await saveRename() }
+                        }
+                        .disabled(editing || renameTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
+                .interactiveDismissDisabled(editing)
+            }
+            .presentationDetents([.medium])
+        }
+        .confirmationDialog(
+            "确定要永久删除此云端会话吗？",
+            isPresented: $showingDelete,
+            titleVisibility: .visible
+        ) {
+            Button("删除会话", role: .destructive) {
+                Task { await removeConversation() }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("删除后无法在 AERTEX Intelligence 中恢复。")
+        }
+        .alert("账户操作失败", isPresented: Binding(
+            get: { error != nil && conversations != nil },
+            set: { if !$0 { error = nil } }
+        )) {
+            Button("关闭", role: .cancel) { error = nil }
+        } message: {
+            Text(error ?? "操作未完成")
+        }
+    }
+
+    private func saveRename() async {
+        guard let renameId, !editing else { return }
+        editing = true
+        do {
+            try await auth.mutateAIConversation(
+                conversationId: renameId, method: "PATCH", title: renameTitle
+            )
+            showingRename = false
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+        editing = false
+        if !showingRename { await load() }
+    }
+
+    private func removeConversation() async {
+        guard let deleteId, !editing else { return }
+        editing = true
+        do {
+            try await auth.mutateAIConversation(conversationId: deleteId, method: "DELETE")
+            error = nil
+            deleteId = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+        editing = false
+        await load()
     }
 
     private func load() async {
