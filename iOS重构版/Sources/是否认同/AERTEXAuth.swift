@@ -313,6 +313,70 @@ final class AERTEXAuthStore: ObservableObject {
     }
 
 
+    /// Account-owned native AI conversation management. Only safe title and
+    /// deletion operations are exposed in iOS; all ownership is server checked.
+    func mutateAIConversation(
+        conversationId: String,
+        method: String,
+        title: String? = nil
+    ) async throws {
+        guard isAuthenticated,
+              conversationId.range(
+                of: "^[0-9A-Fa-f-]{36}$", options: .regularExpression
+              ) != nil,
+              ["PATCH", "DELETE"].contains(method) else {
+            throw AERTEXNativeError(message: "无效的对话管理操作。")
+        }
+        do {
+            try await performConversationMutation(
+                conversationId: conversationId, method: method, title: title
+            )
+        } catch let error as AERTEXNativeError where error.statusCode == 401 {
+            guard await refreshAccount() else { throw error }
+            try await performConversationMutation(
+                conversationId: conversationId, method: method, title: title
+            )
+        }
+    }
+
+    private func performConversationMutation(
+        conversationId: String, method: String, title: String?
+    ) async throws {
+        guard let accessToken,
+              let url = URL(string: "https://gpt.qsseda.com/api/native/intelligence/conversations/" + conversationId) else {
+            throw AERTEXNativeError(message: "缺少 AERTEX 访问令牌。", statusCode: 401)
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.timeoutInterval = 25
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if method == "PATCH" {
+            let text = (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty, text.count <= 120 else {
+                throw AERTEXNativeError(message: "标题长度需要在 1–120 个字符之间。")
+            }
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: ["title": text])
+        }
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AERTEXNativeError(message: "Intelligence 服务未返回有效响应。")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let payload = try? JSONDecoder().decode(AERTEXErrorResponse.self, from: data)
+            throw AERTEXNativeError(
+                message: payload?.error ?? "对话操作失败（HTTP \(http.statusCode)）。",
+                statusCode: http.statusCode
+            )
+        }
+        guard let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              parsed["ok"] as? Bool == true else {
+            throw AERTEXNativeError(message: "服务端尚未确认操作完成。")
+        }
+    }
+
     /// First-party Studio mutations: existing server R2 engines enforce owner
     /// prefixes and validate project/task fields. No service-role API key.
     func nativeStudioMutation<Response: Decodable>(
