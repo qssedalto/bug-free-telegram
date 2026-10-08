@@ -2,116 +2,29 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var preferences: AppPreferences
-    @EnvironmentObject private var auth: AERTEXAuthStore
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.scenePhase) private var scenePhase
     @State private var confirmDefaults = false
-    @State private var showAERTEX = false
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    HStack(spacing: 16) {
-                        BrandIconView(size: 72)
+                    HStack(spacing: 14) {
+                        Image(systemName: "questionmark.bubble.fill")
+                            .font(.system(size: 36))
+                            .foregroundStyle(preferences.accentControlColor)
+                            .frame(width: 60, height: 60)
                         VStack(alignment: .leading, spacing: 5) {
-                            Text("是否认同").font(.title2.weight(.black))
-                            Text("版本 1.1.0 · iOS 重构版").font(.caption).foregroundStyle(.secondary)
-                            Text("© 天国智造 · TGLab").font(.caption.weight(.bold))
+                            Text("是否认同").font(.title2.weight(.bold))
+                            Text("AERTEX · 附属功能")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("剧情与历史记录仅保存在本机")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 8)
-                }
-
-                Section("AERTEX 账户") {
-                    Button { showAERTEX = true } label: {
-                        Label("账户与服务中心", systemImage: "person.crop.circle.badge.checkmark")
-                    }
-                    if let user = auth.user {
-                        LabeledContent("显示名称", value: user.displayName)
-                        if !user.username.isEmpty {
-                            LabeledContent("用户名", value: user.username)
-                        }
-                        LabeledContent("邮箱", value: user.email)
-                        LabeledContent("状态", value: user.status == "active" ? "正常" : user.status)
-                    } else {
-                        Label("当前会话不可用", systemImage: "person.crop.circle.badge.exclamationmark")
-                    }
-
-                    Button("退出 AERTEX", role: .destructive) {
-                        Task {
-                            await auth.logout()
-                            dismiss()
-                        }
-                    }
-                }
-
-                Section("AERTEX 主题色") {
-                    let accent = preferences.currentAERTEXAccent
-
-                    HStack(spacing: 14) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(accent.color)
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.34),
-                                    Color.clear,
-                                    Color.black.opacity(0.12)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-
-                            Image(systemName: "paintpalette.fill")
-                                .font(.system(size: 23, weight: .bold))
-                                .foregroundStyle(accent.inkColor.opacity(0.92))
-                        }
-                        .frame(width: 58, height: 58)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(Color.primary.opacity(0.10), lineWidth: 0.7)
-                        )
-                        .shadow(color: accent.color.opacity(0.22), radius: 10, y: 5)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(accent.displayName(english: preferences.english))
-                                .font(.headline.weight(.bold))
-                            Text(accent.hex.uppercased())
-                                .font(.caption.monospaced().weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            Text("与 AERTEX 主站同步")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "checkmark.seal.fill")
-                            .font(.title3)
-                            .foregroundStyle(preferences.accentControlColor)
-                    }
-                    .padding(.vertical, 5)
-
-                    if !accent.modelSummary.isEmpty {
-                        LabeledContent("配色来源", value: accent.modelSummary)
-                            .font(.caption)
-                    }
-
-                    Button {
-                        Task { await syncAERTEXAppearance() }
-                    } label: {
-                        Label("立即同步主站主题色", systemImage: "arrow.triangle.2.circlepath")
-                    }
-
-                    Link(destination: URL(string: "https://qsseda.com/zh-cn/settings/appearance")!) {
-                        Label("前往 AERTEX 主站调整颜色", systemImage: "safari")
-                    }
-
-                    Text("主题色由 AERTEX 主站统一管理。请前往主站「设置 → 主题与外观」调整颜色；返回 App 后会自动同步。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 Section("金额与锚点") {
@@ -131,9 +44,6 @@ struct SettingsView: View {
                 }
 
                 Section("外观") {
-                    Picker("主题", selection: $preferences.theme) {
-                        ForEach(AppTheme.allCases) { Text($0.rawValue).tag($0) }
-                    }
                     VStack(alignment: .leading) {
                         HStack { Text("字号缩放"); Spacer(); Text("\(Int(preferences.fontScale * 100))%").monospacedDigit() }
                         Slider(value: $preferences.fontScale, in: 0.75...1.75, step: 0.05)
@@ -159,24 +69,13 @@ struct SettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background { LiquidGlassBackdrop() }
-            .navigationTitle("设置")
+            .navigationTitle("是否认同设置")
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
         }
         .presentationDetents([.large])
-        .sheet(isPresented: $showAERTEX) { AERTEXHubView() }
         .alert("恢复默认设置？", isPresented: $confirmDefaults) {
             Button("取消", role: .cancel) {}
             Button("恢复", role: .destructive) { preferences.restoreDefaults() }
-        } message: { Text("这会恢复标题、问题、主题和金额参数；剧情历史不会被删除。AERTEX 主题色不会被本地重置。") }
-        .onChange(of: scenePhase) { newPhase in
-            guard newPhase == .active else { return }
-            Task { await syncAERTEXAppearance() }
-        }
-    }
-
-    @MainActor
-    private func syncAERTEXAppearance() async {
-        guard await auth.refreshAccount() else { return }
-        preferences.applyAERTEXAccent(auth.user?.accentId)
+        } message: { Text("这会恢复「是否认同」的标题、问题和金额参数；剧情历史不会被删除。不会修改 AERTEX 账户及主站主题色。") }
     }
 }
