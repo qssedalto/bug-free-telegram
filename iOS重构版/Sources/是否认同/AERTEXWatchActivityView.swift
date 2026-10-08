@@ -157,7 +157,7 @@ struct AERTEXWatchBucketView: View {
             loaded = true
             error = nil
         } catch {
-            error = error.localizedDescription
+            self.error = error.localizedDescription
         }
     }
 }
