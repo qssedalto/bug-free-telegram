@@ -3,11 +3,13 @@ import SwiftUI
 /// Native account entry point. AERTEX remains the identity/API service;
 /// the app is its client rather than an HTTP server exposed on the iPhone.
 struct AERTEXHubView: View {
+    var presentedAsSheet = false
     @EnvironmentObject private var auth: AERTEXAuthStore
     @EnvironmentObject private var preferences: AppPreferences
     @Environment(\.dismiss) private var dismiss
     @State private var syncMessage: String?
     @State private var isSyncing = false
+    @State private var confirmSignOut = false
 
     private var accountName: String {
         guard let user = auth.user else { return "AERTEX ID" }
@@ -21,8 +23,14 @@ struct AERTEXHubView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         accountCard
                         connectionCard
+                        appearanceCard
                         actionsCard
-                        Text("「是否认同」通过 AERTEX ID 安全连接账户。主站管理账户信息及主题色；剧情、金额设置和历史记录继续留在本机。")
+                        Button(role: .destructive) { confirmSignOut = true } label: {
+                            Label("退出 AERTEX ID", systemImage: "rectangle.portrait.and.arrow.right")
+                                .frame(maxWidth: .infinity, minHeight: 48)
+                        }
+                        .liquidGlassButtonStyle()
+                        Text("AERTEX 是主应用；「是否认同」是内置附属模块。账户信息及强调色来自 AERTEX，剧情与历史数据仍保留在设备上。")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 8)
@@ -33,15 +41,25 @@ struct AERTEXHubView: View {
                 }
             }
             .background { LiquidGlassBackdrop() }
-            .navigationTitle("AERTEX")
+            .navigationTitle("我的 AERTEX")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("完成") { dismiss() }
+                if presentedAsSheet {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("完成") { dismiss() }
+                    }
                 }
             }
         }
         .presentationDetents([.large])
+        .alert("退出 AERTEX？", isPresented: $confirmSignOut) {
+            Button("取消", role: .cancel) {}
+            Button("退出", role: .destructive) {
+                Task { await auth.logout() }
+            }
+        } message: {
+            Text("退出后需要重新登录。保存在本机的「是否认同」剧情及历史记录不会被删除。")
+        }
     }
 
     private var accountCard: some View {
@@ -127,6 +145,38 @@ struct AERTEXHubView: View {
             }
             .liquidGlassButtonStyle(prominent: true, tint: preferences.accentControlColor)
             .disabled(isSyncing || auth.isRefreshing)
+        }
+        .padding(20)
+        .liquidGlassSurface(cornerRadius: 24, tint: preferences.accentColor.opacity(0.055))
+    }
+
+    private var appearanceCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("主题与外观", systemImage: "paintpalette.fill")
+                .font(.headline)
+                .foregroundStyle(preferences.accentControlColor)
+            HStack(spacing: 14) {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(preferences.accentColor)
+                    .frame(width: 48, height: 48)
+                    .overlay {
+                        Image(systemName: "checkmark")
+                            .foregroundStyle(preferences.accentInkColor)
+                    }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(preferences.accentName)
+                        .font(.subheadline.weight(.bold))
+                    Text(preferences.currentAERTEXAccent.hex.uppercased())
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundStyle(preferences.accentControlColor)
+            }
+            Text("强调色跟随 AERTEX 主站；深浅模式跟随 iOS 系统。颜色请到主站调整，再返回 App 同步。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .padding(20)
         .liquidGlassSurface(cornerRadius: 24, tint: preferences.accentColor.opacity(0.055))
