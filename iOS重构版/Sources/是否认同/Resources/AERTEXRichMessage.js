@@ -583,11 +583,6 @@ function richMessageRuntime(copy) {
   window.AERTEXRich = { render, stream, finalize, enhance };
 }
 
-function richMessageClientScript(copy = {}) {
-  const payload = JSON.stringify(copy || {}).replace(/</g, "\\u003c");
-  return "<script>(" + richMessageRuntime.toString() + ")(" + payload + ")</script>";
-}
-
 /* Exact AERTEX Intelligence website Markdown + KaTeX/highlight.js renderer,
  * sourced from studio/gpt-rich-renderer.js on 2026-10-08.
  * WKWebView is used ONLY as a sandboxed rich message canvas.
