@@ -255,6 +255,63 @@ final class AERTEXAuthStore: ObservableObject {
         state = .signedOut
     }
 
+    /// Native JSON-only product API. Hostnames are fixed in the compiled app;
+    /// no URL is provided by the user or decoded from server-controlled data.
+    func nativeGet<Response: Decodable>(
+        _ type: Response.Type,
+        product: AERTEXNativeProduct,
+        path: String
+    ) async throws -> Response {
+        guard isAuthenticated else {
+            throw AERTEXNativeError(message: "请先登录 AERTEX ID。")
+        }
+        do {
+            return try await nativeGetWithToken(type, product: product, path: path)
+        } catch let error as AERTEXNativeError where error.statusCode == 401 {
+            guard await refreshAccount() else {
+                throw AERTEXNativeError(message: "登录会话已过期，请重新登录。", statusCode: 401)
+            }
+            return try await nativeGetWithToken(type, product: product, path: path)
+        }
+    }
+
+    private func nativeGetWithToken<Response: Decodable>(
+        _ type: Response.Type,
+        product: AERTEXNativeProduct,
+        path: String
+    ) async throws -> Response {
+        guard let accessToken else {
+            throw AERTEXNativeError(message: "当前没有可用的访问令牌。", statusCode: 401)
+        }
+        guard path.hasPrefix("/api/native/"), !path.contains(".."),
+              let url = URL(string: product.baseAddress + path) else {
+            throw AERTEXNativeError(message: "无效的 AERTEX 服务路径。")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 25
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \\(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("AERTEX/2.1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AERTEXNativeError(message: "服务返回了无效响应。")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let detail = try? JSONDecoder().decode(AERTEXErrorResponse.self, from: data)
+            throw AERTEXNativeError(
+                message: detail?.error ?? "服务请求失败（HTTP \\(http.statusCode)）。",
+                statusCode: http.statusCode
+            )
+        }
+        do {
+            return try JSONDecoder().decode(Response.self, from: data)
+        } catch {
+            throw AERTEXNativeError(message: "服务数据格式暂不兼容当前 App。")
+        }
+    }
+
     private func request<Response: Decodable>(
         path: String,
         method: String,
@@ -265,7 +322,7 @@ final class AERTEXAuthStore: ObservableObject {
         request.httpMethod = method
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("AERTEX/2.0.1 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("AERTEX/2.1.0 (iOS)", forHTTPHeaderField: "User-Agent")
         if let bearer {
             request.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
         }
@@ -337,4 +394,24 @@ private struct AERTEXKeychain {
             kSecAttrAccount: account
         ] as CFDictionary)
     }
+}
+
+enum AERTEXNativeProduct {
+    case studio
+    case intelligence
+    case watch
+
+    var baseAddress: String {
+        switch self {
+        case .studio: return "https://qsseda.com"
+        case .intelligence: return "https://gpt.qsseda.com"
+        case .watch: return "https://aw.qsseda.com"
+        }
+    }
+}
+
+struct AERTEXNativeError: LocalizedError {
+    let message: String
+    var statusCode: Int? = nil
+    var errorDescription: String? { message }
 }
