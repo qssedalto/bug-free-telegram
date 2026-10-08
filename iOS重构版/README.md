@@ -33,3 +33,15 @@
 - `AERTEXAuthStore.updateDisplayName` 通过 `PATCH /api/app/profile` 更新自己账户的资料；访问令牌过期时尝试刷新后重试。
 - **配套依赖：** `qssed.studio` Auth Worker 需首先发布新的 `/api/app/profile` 路由；上线前验证数据库 RLS、账号状态和同步结果。
 - 界面仍保留独立网站服务入口，尚未把 Work、Watch、Intelligence 的业务页面伪装成原生功能。
+
+## 2.1.0 原生服务接入（新增）
+
+AERTEX 的「首页」和「服务」页现在可直接打开三个 SwiftUI 服务页面：
+
+- **Studio**：云端项目/任务与个人工作台计数（`GET /api/native/studio/overview`）。
+- **Intelligence**：云端会话列表、单个会话的消息记录（`GET /api/native/intelligence/conversations`）。暂无原生发送消息能力。
+- **Watch**：已同步的电脑 ActivityWatch 数据源数、最近同步时间及电脑名称（`GET /api/native/watch/status`）；不代表 Apple Watch 或 Health 数据。
+- **Work**：尚未提供受信任的原生业务接口，仍明确标示为 Safari 网页入口，不使用 WebView。
+- **是否认同**：继续作为应用内可退出的附属模块，不改变本地存档与 Bundle ID。
+
+原生客户端复用 AERTEX ID Keychain refresh token 和内存里的 access token。新增服务 API 必须先在后端生产环境上线，然后才能发布/安装此版本。本次改动尚需 xtool 在 Omarchy 的 SwiftUI SDK 编译和 iPhone 真机验证。
