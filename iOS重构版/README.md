@@ -8,10 +8,9 @@
 | --- | --- | --- |
 | 首页 | AERTEXHomeView | 欢迎页、主站服务卡片、内置功能入口 |
 | 服务 | AERTEXServicesView | 访问 Studio、Work、Intelligence、Watch 的官方网页 |
-| 是否认同 | ContentView | 原始剧情、金额计算、统计图、成就等完整原生功能 |
 | 我的 | AERTEXHubView | AERTEX ID 信息、登录会话、主站强调色、同步与退出 |
 
-登录首先进入 `AERTEXLoginView`，验证成功后才进入 `AERTEXRootView`。全局使用原生 SwiftUI、iOS 26 Liquid Glass（低版本 Material 回退），强调色由 AERTEX ID 账户 `accentId` 决定，浅深模式跟随 iOS 系统。
+「是否认同」不占用一级底部标签，而从首页「我的应用」或服务页「内置应用」打开全屏原生模块，保留返回 AERTEX 的入口。登录首先进入 `AERTEXLoginView`，验证成功后才进入 `AERTEXRootView`。全局使用原生 SwiftUI、iOS 26 Liquid Glass（低版本 Material 回退），强调色由 AERTEX ID 账户 `accentId` 决定，浅深模式跟随 iOS 系统。
 
 ## 技术约束
 
