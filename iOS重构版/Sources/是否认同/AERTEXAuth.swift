@@ -292,7 +292,7 @@ final class AERTEXAuthStore: ObservableObject {
         request.timeoutInterval = 25
         request.cachePolicy = .reloadIgnoringLocalCacheData
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("Bearer \\(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("AERTEX/2.1.0 (iOS)", forHTTPHeaderField: "User-Agent")
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else {
@@ -301,7 +301,7 @@ final class AERTEXAuthStore: ObservableObject {
         guard (200..<300).contains(http.statusCode) else {
             let detail = try? JSONDecoder().decode(AERTEXErrorResponse.self, from: data)
             throw AERTEXNativeError(
-                message: detail?.error ?? "服务请求失败（HTTP \\(http.statusCode)）。",
+                message: detail?.error ?? "服务请求失败（HTTP \(http.statusCode)）。",
                 statusCode: http.statusCode
             )
         }
