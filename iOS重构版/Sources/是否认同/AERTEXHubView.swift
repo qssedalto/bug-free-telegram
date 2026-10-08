@@ -10,6 +10,8 @@ struct AERTEXHubView: View {
     @State private var syncMessage: String?
     @State private var isSyncing = false
     @State private var confirmSignOut = false
+    @State private var showEditName = false
+    @State private var editedName = ""
 
     private var accountName: String {
         guard let user = auth.user else { return "AERTEX ID" }
@@ -52,6 +54,9 @@ struct AERTEXHubView: View {
             }
         }
         .presentationDetents([.large])
+        .sheet(isPresented: $showEditName) {
+            editNameSheet
+        }
         .alert("退出 AERTEX？", isPresented: $confirmSignOut) {
             Button("取消", role: .cancel) {}
             Button("退出", role: .destructive) {
@@ -80,6 +85,17 @@ struct AERTEXHubView: View {
                 Spacer(minLength: 0)
             }
 
+            Button {
+                editedName = auth.user?.displayName ?? ""
+                auth.errorMessage = nil
+                showEditName = true
+            } label: {
+                Label("修改 AERTEX 显示名称", systemImage: "square.and.pencil")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(preferences.accentControlColor)
+
             Divider()
 
             HStack {
@@ -96,6 +112,54 @@ struct AERTEXHubView: View {
         }
         .padding(22)
         .liquidGlassSurface(cornerRadius: 28, tint: preferences.accentColor.opacity(0.10))
+    }
+
+    private var editNameSheet: some View {
+        NavigationStack {
+            Form {
+                Section("显示名称") {
+                    TextField("新的显示名称", text: $editedName)
+                        .textContentType(.nickname)
+                        .autocorrectionDisabled()
+                        .submitLabel(.done)
+                    Text("修改后会立即同步到 AERTEX 账户。用户名、邮箱及权限不会改变。")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                if let message = auth.errorMessage, !message.isEmpty {
+                    Section {
+                        Label(message, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle("编辑账户资料")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { showEditName = false }
+                        .disabled(auth.isUpdatingProfile)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        Task {
+                            if await auth.updateDisplayName(editedName) {
+                                showEditName = false
+                            }
+                        }
+                    } label: {
+                        if auth.isUpdatingProfile {
+                            ProgressView()
+                        } else {
+                            Text("保存")
+                        }
+                    }
+                    .disabled(auth.isUpdatingProfile || editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .interactiveDismissDisabled(auth.isUpdatingProfile)
+        }
+        .presentationDetents([.medium, .large])
     }
 
     private var connectionCard: some View {
