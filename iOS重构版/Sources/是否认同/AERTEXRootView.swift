@@ -145,10 +145,7 @@ struct AERTEXRootView: View {
                     capsuleItem(.account, label: "我的", symbol: "person.crop.circle.fill")
                 }
                 .padding(7)
-                .background {
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                }
+                // One system glass material, no stacked translucent shells.
                 .liquidGlassCapsule(interactive: true)
                 .highPriorityGesture(
                     DragGesture(minimumDistance: 4)
