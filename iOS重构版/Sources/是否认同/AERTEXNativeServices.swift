@@ -332,8 +332,15 @@ struct AERTEXWatchNativeView: View {
     @State private var error: String?
     @State private var loading = false
 
-    private var sources: [(key: String, value: AERTEXWatchStatus.Bucket)] {
-        (status?.buckets ?? [:]).sorted { $0.key < $1.key }
+    private struct WatchSource: Identifiable {
+        let id: String
+        let bucket: AERTEXWatchStatus.Bucket
+    }
+
+    private var sources: [WatchSource] {
+        (status?.buckets ?? [:])
+            .map { WatchSource(id: $0.key, bucket: $0.value) }
+            .sorted { $0.id < $1.id }
     }
 
     var body: some View {
@@ -349,12 +356,12 @@ struct AERTEXWatchNativeView: View {
                         if sources.isEmpty {
                             Text("尚无 ActivityWatch 数据源").foregroundStyle(.secondary)
                         }
-                        ForEach(sources, id: \.key) { source in
+                        ForEach(sources) { source in
                             VStack(alignment: .leading, spacing: 5) {
-                                Text(source.value.hostname ?? "未知设备").font(.headline)
-                                Text(source.value.type ?? source.key)
+                                Text(source.bucket.hostname ?? "未知设备").font(.headline)
+                                Text(source.bucket.type ?? source.id)
                                     .font(.caption).foregroundStyle(.secondary)
-                                if let date = source.value.last_sync {
+                                if let date = source.bucket.last_sync {
                                     Text("最近同步：\(date)")
                                         .font(.caption2).foregroundStyle(.secondary)
                                 }
