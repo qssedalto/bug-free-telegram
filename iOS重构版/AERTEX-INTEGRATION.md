@@ -59,3 +59,20 @@ Studio、Work、Intelligence、Watch 尚无已经核实的面向本 App 的业�
 「我的」→「修改 AERTEX 显示名称」现在使用 SwiftUI Form + HTTPS JSON API 完成，不跳转到 WebView。API 修改的是云端 `profiles.display_name`，保存成功后自动更新 iOS 中的账户资料与首页欢迎语。Token 过期时先通过既有刷新接口获取新 token，然后只重试一次保存。
 
 **两仓库同步发布顺序：** 先发布 `qssedalto/qssed.studio` 的 Auth Worker `/api/app/profile`，确认授权、RLS 和回归测试正常，再安装 `qssedalto/bug-free-telegram` 的 iOS 新版本。服务器尚未部署时，修改显示名称会显示错误提示，不会静默伪装成功。不要通过 App 直接写 Service Role Key 或访问其他用户资料。
+
+## AERTEX 2.1.0：三个原生服务 API
+
+当前 iOS 用 SwiftUI + URLSession（不使用 WKWebView）接入：
+
+| 模块 | 请求 | 原生界面 | 限制 |
+|---|---|---|---|
+| Studio | `GET https://qsseda.com/api/native/studio/overview` | 个人项目、任务、工作台汇总 | 只读 |
+| Intelligence | `GET https://gpt.qsseda.com/api/native/intelligence/conversations` | 云端历史会话列表 | 只读，最多 100 条 |
+| Intelligence | `GET https://gpt.qsseda.com/api/native/intelligence/conversations/{id}` | 消息详情 | 只读；仅自己的会话 |
+| Watch | `GET https://aw.qsseda.com/api/native/watch/status` | ActivityWatch 同步设备与数据源 | 不包含 Apple 健康数据 |
+
+三个服务共享现有 AERTEX ID 的 Supabase Bearer 会话。访问令牌过期时由 `AERTEXAuthStore.nativeGet` 使用既有刷新接口恢复一次，再重试 GET。登录态和账户状态由每个服务端点验证；不会从浏览器 Cookie、设备上传 Token 或用户可修改的 ID 推断权限。
+
+**上线顺序**：先合并并部署 `qssed.studio` 的新路由，检查 CI、安全隔离和真实账户读接口；再合并 iOS App 代码并用 Omarchy 的 xtool 实际编译、真机安装。未部署时原生页面显示连接失败和重试按钮，不能将其称为已上线功能。
+
+尚未实现：Intelligence 发送消息/流式生成、Studio 项目任务修改，以及 Watch 的原生活动统计算法。这些功能会在后续独立实现，绝不使用 WebView 冒充。
