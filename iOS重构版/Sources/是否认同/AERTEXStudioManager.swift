@@ -233,8 +233,10 @@ struct AERTEXStudioManagerView: View {
                 product: .studio,
                 path: "/api/native/studio/tasks"
             )
-            projects = try await p.projects
-            tasks = try await t.tasks
+            let loadedProjects = try await p
+            let loadedTasks = try await t
+            projects = loadedProjects.projects
+            tasks = loadedTasks.tasks
             error = nil
         } catch {
             self.error = error.localizedDescription
