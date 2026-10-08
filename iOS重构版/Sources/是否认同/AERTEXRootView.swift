@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// Tracks native drill-down destinations independently of the three root tabs.
+final class AERTEXTabChrome: ObservableObject {
+    @Published var hidden = false
+}
+
+
 /// AERTEX is now the application. The original "是否认同" experience is
 /// one self-contained module inside the native AERTEX product shell.
 enum AERTEXSection: Hashable {
@@ -46,6 +52,7 @@ struct AERTEXService: Identifiable {
  * Work remains an explicit Safari link until its own mobile API is ready.
  */
 struct AERTEXServiceLink<LabelContent: View>: View {
+    @EnvironmentObject private var tabChrome: AERTEXTabChrome
     let service: AERTEXService
     let label: () -> LabelContent
 
@@ -58,7 +65,9 @@ struct AERTEXServiceLink<LabelContent: View>: View {
         if service.id == "work" {
             Link(destination: service.url, label: label)
         } else {
-            NavigationLink(destination: destination, label: label)
+            NavigationLink(destination: destination
+                .onAppear { tabChrome.hidden = true }
+                .onDisappear { tabChrome.hidden = false }, label: label)
         }
     }
 
@@ -78,6 +87,8 @@ struct AERTEXRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: AERTEXSection = .home
     @State private var showAgree = false
+    @StateObject private var tabChrome = AERTEXTabChrome()
+    @State private var dragSelection: AERTEXSection?
 
     var body: some View {
         TabView(selection: $selection) {
@@ -100,11 +111,14 @@ struct AERTEXRootView: View {
         // retaining TabView's navigation stacks and per-tab state.
         .toolbar(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            capsuleTabBar
-                .padding(.horizontal, 25)
-                .padding(.top, 7)
-                .padding(.bottom, 6)
+            if !tabChrome.hidden {
+                capsuleTabBar
+                    .padding(.horizontal, 18)
+                    .padding(.top, 6)
+                    .padding(.bottom, 12)
+            }
         }
+        .environmentObject(tabChrome)
         .tint(preferences.accentControlColor)
         .fullScreenCover(isPresented: $showAgree) {
             ContentView(presentedFromAERTEX: true)
@@ -119,51 +133,74 @@ struct AERTEXRootView: View {
         }
     }
 
+    private let tabs: [AERTEXSection] = [.home, .services, .account]
+
     private var capsuleTabBar: some View {
-        LiquidGlassContainer(spacing: 5) {
-            HStack(spacing: 3) {
-                capsuleItem(.home, label: "首页", symbol: "house.fill")
-                capsuleItem(.services, label: "服务", symbol: "square.grid.2x2.fill")
-                capsuleItem(.account, label: "我的", symbol: "person.crop.circle.fill")
+        LiquidGlassContainer(spacing: 8) {
+            GeometryReader { geometry in
+                let itemWidth = max(1, (geometry.size.width - 14) / 3)
+                HStack(spacing: 0) {
+                    capsuleItem(.home, label: "首页", symbol: "house.fill")
+                    capsuleItem(.services, label: "服务", symbol: "square.grid.2x2.fill")
+                    capsuleItem(.account, label: "我的", symbol: "person.crop.circle.fill")
+                }
+                .padding(7)
+                .background {
+                    Capsule()
+                        .fill(.ultraThinMaterial)
+                }
+                .liquidGlassCapsule(interactive: true)
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 4)
+                        .onChanged { gesture in
+                            let raw = Int((gesture.location.x - 7) / itemWidth)
+                            let index = min(2, max(0, raw))
+                            let next = tabs[index]
+                            if dragSelection != next {
+                                dragSelection = next
+                            }
+                        }
+                        .onEnded { gesture in
+                            let raw = Int((gesture.location.x - 7) / itemWidth)
+                            let index = min(2, max(0, raw))
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                                selection = tabs[index]
+                            }
+                            dragSelection = nil
+                        }
+                )
             }
-            .padding(7)
-            .liquidGlassCapsule(interactive: true)
+            .frame(height: 64)
             .frame(maxWidth: 470)
             .frame(maxWidth: .infinity)
         }
     }
 
     private func capsuleItem(
-        _ item: AERTEXSection,
-        label: String,
-        symbol: String
+        _ item: AERTEXSection, label: String, symbol: String
     ) -> some View {
-        let selected = selection == item
+        let active = (dragSelection ?? selection) == item
         return Button {
-            withAnimation(.spring(response: 0.33, dampingFraction: 0.82)) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
                 selection = item
             }
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: symbol)
-                    .font(.system(size: 18, weight: selected ? .semibold : .regular))
-                Text(label)
-                    .font(.caption.weight(selected ? .semibold : .medium))
+                Image(systemName: symbol).font(.system(size: 17, weight: .semibold))
+                Text(label).font(.caption.weight(active ? .bold : .medium))
             }
-            .foregroundStyle(selected ? preferences.accentControlColor : .secondary)
-            .frame(maxWidth: .infinity, minHeight: 45)
-            .padding(.horizontal, 3)
+            .foregroundStyle(active ? preferences.accentControlColor : .secondary)
+            .frame(maxWidth: .infinity, minHeight: 50)
             .background {
-                if selected {
-                    Capsule(style: .continuous)
-                        .fill(preferences.accentColor.opacity(0.16))
+                if active {
+                    Capsule().fill(preferences.accentColor.opacity(0.17))
                 }
             }
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-        .accessibilityAddTraits(selected ? [.isSelected] : [])
+        .accessibilityAddTraits(active ? [.isSelected] : [])
     }
 }
 
