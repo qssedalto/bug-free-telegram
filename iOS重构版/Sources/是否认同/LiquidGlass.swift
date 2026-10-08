@@ -128,7 +128,7 @@ struct LiquidGlassBackdrop: View {
                     .offset(x: proxy.size.width - shortest * 0.42, y: shortest * 0.34)
 
                 Circle()
-                    .fill(Color.indigo.opacity(preferences.theme == .light ? 0.12 : 0.18))
+                    .fill(Color.indigo.opacity(systemColorScheme == .light ? 0.12 : 0.18))
                     .frame(width: shortest * 0.68, height: shortest * 0.68)
                     .blur(radius: shortest * 0.18)
                     .offset(x: shortest * 0.12, y: proxy.size.height - shortest * 0.28)
@@ -137,9 +137,9 @@ struct LiquidGlassBackdrop: View {
 
             LinearGradient(
                 colors: [
-                    Color.white.opacity(preferences.theme == .light ? 0.12 : 0.025),
+                    Color.white.opacity(systemColorScheme == .light ? 0.12 : 0.025),
                     Color.clear,
-                    Color.black.opacity(preferences.theme == .light ? 0.02 : 0.10)
+                    Color.black.opacity(systemColorScheme == .light ? 0.02 : 0.10)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
