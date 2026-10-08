@@ -225,6 +225,12 @@ struct AERTEXWatchNativeView: View {
                             Text("尚无 ActivityWatch 数据源").foregroundStyle(.secondary)
                         }
                         ForEach(sources) { source in
+                            NavigationLink {
+                                AERTEXWatchBucketView(
+                                    bucketId: source.id,
+                                    bucketName: source.bucket.hostname ?? source.id
+                                )
+                            } label: {
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(source.bucket.hostname ?? "未知设备").font(.headline)
                                 Text(source.bucket.type ?? source.id)
@@ -235,6 +241,7 @@ struct AERTEXWatchNativeView: View {
                                 }
                             }
                             .padding(.vertical, 3)
+                            }
                         }
                     }
                     Section {
