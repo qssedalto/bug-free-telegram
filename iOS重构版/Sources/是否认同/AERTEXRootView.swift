@@ -31,7 +31,7 @@ struct AERTEXService: Identifiable {
     )
     static let intelligence = AERTEXService(
         id: "intelligence", title: "AERTEX Intelligence",
-        subtitle: "原生历史会话浏览", symbol: "sparkles",
+        subtitle: "原生流式 AI 对话 · 数学公式", symbol: "sparkles",
         address: "https://gpt.qsseda.com"
     )
     static let watch = AERTEXService(
@@ -93,6 +93,15 @@ struct AERTEXRootView: View {
                 .tabItem { Label("我的", systemImage: "person.crop.circle.fill") }
                 .tag(AERTEXSection.account)
         }
+        // iOS 27 floating capsule: hide the legacy opaque system bar while
+        // retaining TabView's navigation stacks and per-tab state.
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            capsuleTabBar
+                .padding(.horizontal, 25)
+                .padding(.top, 7)
+                .padding(.bottom, 6)
+        }
         .tint(preferences.accentControlColor)
         .fullScreenCover(isPresented: $showAgree) {
             ContentView(presentedFromAERTEX: true)
@@ -105,6 +114,53 @@ struct AERTEXRootView: View {
                 }
             }
         }
+    }
+
+    private var capsuleTabBar: some View {
+        LiquidGlassContainer(spacing: 5) {
+            HStack(spacing: 3) {
+                capsuleItem(.home, label: "首页", symbol: "house.fill")
+                capsuleItem(.services, label: "服务", symbol: "square.grid.2x2.fill")
+                capsuleItem(.account, label: "我的", symbol: "person.crop.circle.fill")
+            }
+            .padding(7)
+            .liquidGlassCapsule(interactive: true)
+            .frame(maxWidth: 470)
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private func capsuleItem(
+        _ item: AERTEXSection,
+        label: String,
+        symbol: String
+    ) -> some View {
+        let selected = selection == item
+        return Button {
+            withAnimation(.spring(response: 0.33, dampingFraction: 0.82)) {
+                selection = item
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: symbol)
+                    .font(.system(size: 18, weight: selected ? .semibold : .regular))
+                Text(label)
+                    .font(.caption.weight(selected ? .semibold : .medium))
+            }
+            .foregroundStyle(selected ? preferences.accentControlColor : .secondary)
+            .frame(maxWidth: .infinity, minHeight: 45)
+            .padding(.horizontal, 3)
+            .background {
+                if selected {
+                    Capsule(style: .continuous)
+                        .fill(preferences.accentColor.opacity(0.16))
+                }
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 }
 
@@ -299,7 +355,7 @@ struct AERTEXServicesView: View {
                     VStack(alignment: .leading, spacing: 7) {
                         Text("连接 AERTEX")
                             .font(.title2.weight(.bold))
-                        Text("Studio 工作台、Intelligence 会话和 Watch 同步状态已接入原生 API；Work 暂时仍由 Safari 打开。")
+                        Text("Studio 工作台、Intelligence 原生 AI 对话和 Watch 同步状态均已接入原生 API；Work 暂时由 Safari 打开。")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
