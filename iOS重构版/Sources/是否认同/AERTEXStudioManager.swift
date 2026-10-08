@@ -261,7 +261,7 @@ struct AERTEXStudioManagerView: View {
             showProjectForm = false
             error = nil
         } catch {
-            error = error.localizedDescription
+            self.error = error.localizedDescription
         }
         if !showProjectForm {
             // release the write guard before fetching latest server data
@@ -288,7 +288,7 @@ struct AERTEXStudioManagerView: View {
             showTaskForm = false
             error = nil
         } catch {
-            error = error.localizedDescription
+            self.error = error.localizedDescription
         }
         if !showTaskForm {
             isSaving = false
@@ -319,7 +319,7 @@ struct AERTEXStudioManagerView: View {
             isSaving = false
             await load()
         } catch {
-            error = error.localizedDescription
+            self.error = error.localizedDescription
         }
     }
 }
