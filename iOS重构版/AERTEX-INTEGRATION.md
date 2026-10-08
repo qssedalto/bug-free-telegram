@@ -1,35 +1,49 @@
-# AERTEX ×「是否认同」iOS 集成说明
+# AERTEX iOS 应用架构
 
-## 定位
+## 定位（2026-10-08 调整）
 
-「是否认同」iOS App 是 AERTEX 的原生客户端，不应在 iPhone 上开启公网 HTTP API 服务。现有 AERTEX ID 服务位于 `https://auth.qsseda.com`。
+主产品是独立的 **AERTEX iOS App**，不是以「是否认同」为主界面的客户端或换皮 App。「是否认同」是 AERTEX 内部的**单独功能模块**，可以从首页卡片或底部标签进入。欢迎页、服务目录、账户中心及主题体系由 AERTEX 统一管理。
 
-## 已有服务端契约（不修改线上服务端）
+应用仅作为 AERTEX 服务 API 的客户端，不在 iPhone 上运行公网 API 服务。
 
-- `POST /api/app/login`：邮箱与密码登录，返回 token 和账户资料。
-- `POST /api/app/refresh`：轮换刷新令牌。
-- `GET /api/app/session`：通过 Bearer access token 获取当前账户资料。
-- `POST /api/app/logout`：退出。
-- 账户资料中的 `accentId` 用来同步主站强调色。
+## 已验证的原生账户 API
 
-目前没有公开且核实过的原生 App 资料编辑、剧情保存或任意站内业务 API；这些功能不得通过猜测端点实现。
+- `POST https://auth.qsseda.com/api/app/login`
+- `POST https://auth.qsseda.com/api/app/refresh`
+- `GET https://auth.qsseda.com/api/app/session`
+- `POST https://auth.qsseda.com/api/app/logout`
 
-## 本次 UI 集成
+账户响应 `accentId` 决定强调色，过浅/过深颜色使用安全的控件对比色衍生值。刷新令牌仅存 iOS Keychain，访问令牌仅保留在进程内存中。网络超时不应误删本地刷新令牌。
 
-- 顶部增加 AERTEX 账户入口，显示用户、连接状态、最近同步时间。
-- 设置增加「账户与服务中心」入口；主题继续以主站账户色为准。
-- 支持从原生页面同步会话与颜色、前往主站、账户中心和主题外观页面。
-- 断网或服务端暂时故障时，刷新令牌保留在 iOS Keychain；不会因瞬时网络错误被删除。
-- 额外提供登录页的恢复会话入口。
-- 不修改「是否认同」原有三分支剧情、金额计算、本地历史。
-- 遵循项目现有 iOS 26 Liquid Glass，低版本继续走现有 Material fallback。
+## 全新页面结构
 
-## 待上线前验证
+```
+AERTEX (iOS 主应用)
+├─ 首页 AERTEXHomeView
+│  ├─ 账户欢迎语
+│  ├─ 服务入口（网页，清晰标注）
+│  └─ 是否认同快捷入口
+├─ 服务 AERTEXServicesView
+│  ├─ Studio (qsseda.com)
+│  ├─ Work (work.qsseda.com)
+│  ├─ Intelligence (gpt.qsseda.com)
+│  └─ Watch (aw.qsseda.com)
+├─ 是否认同 ContentView
+│  ├─ 三分支剧情、成就、历史
+│  ├─ 数据面板
+│  └─ 模块专属设置
+└─ 我的 AERTEXHubView
+   ├─ 账户资料、连接状态、退出
+   ├─ 会话与强调色同步
+   └─ 账户中心、主题外观链接
+```
 
-1. 用 xtool / Xcode 编译并安装到真机，排查 Swift 编译与运行时问题。
-2. 测试：首次登录、杀进程恢复、token 过期后的刷新、退出、断网重试、失效 token。
-3. 测试：主站调整主题色 → App 重新打开/点击同步 → 全界面主题一致。
-4. 测试：深浅模式、辅助功能大字体、iPhone 竖屏和横屏、键盘与弹窗叠加。
-5. 评估正式切换系统浏览器 + OAuth 2.0 PKCE。原生输入 AERTEX 账户密码虽为现有受支持的第一方方案，但不应给第三方应用复用。
+已有「是否认同」的业务逻辑和 `RuntimeStore` / `AppPreferences` 数据键不迁移、不重置，避免旧装机用户丢失进度。外部 App 名改为 AERTEX 2.0.0，内部 Bundle ID、模块目录、工具链 product 暂留原名以保留升级兼容性。
 
-> 该分支未在 Apple SDK 环境完成编译、签名或真机部署，也未更改后端。合并前需要完成真机验收。
+## 当前边界与验收
+
+Studio、Work、Intelligence、Watch 尚无已经核实的面向本 App 的业务 API；入口是**打开已知官网链接**，并非已经做到各产品的原生功能对接。没有新增云端同步，也不调用猜测接口。
+
+此前的「App 设置」已经分离为「是否认同设置」；颜色只能从 AERTEX 主站改变，iOS App 同步账户主题色，浅深色跟随设备系统。
+
+完成前必须 Apple SDK 编译、真机验证、登录/刷新/退出/失效 token、断网重连、布局与本地数据迁移。尚未进行真机编译或部署，合并需验收。
