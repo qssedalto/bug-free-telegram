@@ -8,6 +8,7 @@ struct AERTEXLoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var isSubmitting = false
+    @State private var isRestoring = false
     @FocusState private var focusedField: Field?
 
     private enum Field {
@@ -90,6 +91,20 @@ struct AERTEXLoginView: View {
                         .opacity(isSubmitting ? 0.8 : 1)
                     }
                     .frame(maxWidth: 460)
+
+                    if auth.errorMessage != nil {
+                        Button {
+                            guard !isRestoring else { return }
+                            isRestoring = true
+                            Task {
+                                await auth.restore()
+                                isRestoring = false
+                            }
+                        } label: {
+                            Label(isRestoring ? "正在重连…" : "重试恢复现有会话", systemImage: "arrow.clockwise")
+                        }
+                        .disabled(isRestoring)
+                    }
 
                     VStack(spacing: 7) {
                         Label("由 auth.qsseda.com 安全验证", systemImage: "lock.shield.fill")
