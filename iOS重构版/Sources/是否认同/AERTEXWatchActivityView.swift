@@ -94,7 +94,8 @@ struct AERTEXWatchBucketView: View {
                         Text("这个数据源最近 24 小时没有事件。")
                             .foregroundStyle(.secondary)
                     }
-                    ForEach(Array(events.enumerated()), id: \.offset) { _, event in
+                    ForEach(Array(events.enumerated()), id: \.offset) { indexed in
+                        let event = indexed.element
                         VStack(alignment: .leading, spacing: 6) {
                             Text(event.data?.app ?? event.data?.title ?? event.data?.status ?? "活动事件")
                                 .font(.subheadline.weight(.semibold))
