@@ -353,15 +353,18 @@ struct AERTEXConversationNativeView: View {
             // placeholder is still on screen. The old onChange(messages.count)
             // only fired before the ScrollView existed, so history opened at
             // the first message. Scroll after the actual transcript mounts.
-            .task(id: isLoading) {
-                guard !isLoading, !messages.isEmpty else { return }
-                try? await Task.sleep(nanoseconds: 180_000_000)
-                guard !Task.isCancelled else { return }
-                proxy.scrollTo(conversationScrollId, anchor: .bottom)
-                // KaTeX/web text canvas can refine its height after load.
-                try? await Task.sleep(nanoseconds: 500_000_000)
-                if !Task.isCancelled {
-                    proxy.scrollTo(conversationScrollId, anchor: .bottom)
+            .onAppear {
+                // ScrollView is created *after* history loading, so rely on
+                // appearance rather than observing an already-finished state.
+                // WKWebView message heights settle asynchronously; repeat a
+                // bounded initial placement without hijacking user scrolling.
+                guard !messages.isEmpty else { return }
+                Task { @MainActor in
+                    for delay in [120, 320, 700, 1400] {
+                        try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
+                        guard !Task.isCancelled else { return }
+                        proxy.scrollTo(conversationScrollId, anchor: .bottom)
+                    }
                 }
             }
             .onChange(of: messages.count) { _ in
