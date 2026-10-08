@@ -127,6 +127,9 @@ struct AERTEXIntelligenceNativeView: View {
         }
         .refreshable { await load() }
         .task { if conversations == nil { await load() } }
+        .onAppear {
+            if conversations != nil { Task { await load() } }
+        }
         .sheet(isPresented: $showingRename) {
             NavigationStack {
                 Form {
@@ -240,10 +243,12 @@ struct AERTEXConversationNativeView: View {
 
     private let initialId: String?
     private let title: String
+    @State private var liveTitle: String
 
     init(conversationId: String?, title: String) {
         initialId = conversationId
         self.title = title
+        _liveTitle = State(initialValue: title)
         _currentId = State(initialValue: conversationId)
     }
 
@@ -287,7 +292,7 @@ struct AERTEXConversationNativeView: View {
             }
         }
         .background { LiquidGlassBackdrop() }
-        .navigationTitle(currentId == nil ? "新对话" : title)
+        .navigationTitle(currentId == nil ? "新对话" : liveTitle)
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             composer
@@ -506,6 +511,7 @@ struct AERTEXConversationNativeView: View {
         inputFocused = false
         partialReply = ""
         messages.append(AERTEXChatLine(role: "user", content: prompt))
+        if currentId == nil { liveTitle = String(prompt.prefix(28)) }
         isSending = true
 
         replyTask = Task {
