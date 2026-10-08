@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @State private var confirmDefaults = false
+    @State private var showAERTEX = false
 
     var body: some View {
         NavigationStack {
@@ -23,6 +24,9 @@ struct SettingsView: View {
                 }
 
                 Section("AERTEX 账户") {
+                    Button { showAERTEX = true } label: {
+                        Label("账户与服务中心", systemImage: "person.crop.circle.badge.checkmark")
+                    }
                     if let user = auth.user {
                         LabeledContent("显示名称", value: user.displayName)
                         if !user.username.isEmpty {
@@ -159,6 +163,7 @@ struct SettingsView: View {
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
         }
         .presentationDetents([.large])
+        .sheet(isPresented: $showAERTEX) { AERTEXHubView() }
         .alert("恢复默认设置？", isPresented: $confirmDefaults) {
             Button("取消", role: .cancel) {}
             Button("恢复", role: .destructive) { preferences.restoreDefaults() }
