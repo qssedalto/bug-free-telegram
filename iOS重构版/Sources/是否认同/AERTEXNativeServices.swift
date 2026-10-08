@@ -78,14 +78,20 @@ struct AERTEXNativeLoadMessage: View {
     let retry: () -> Void
 
     var body: some View {
-        ContentUnavailableView {
-            Label("暂时无法加载", systemImage: "wifi.exclamationmark")
-        } description: {
+        VStack(spacing: 16) {
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(size: 36))
+                .foregroundStyle(.secondary)
+            Text("暂时无法加载")
+                .font(.headline)
             Text(message)
-        } actions: {
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
             Button("重新连接", action: retry)
                 .buttonStyle(.borderedProminent)
         }
+        .padding(24)
     }
 }
 
@@ -282,7 +288,8 @@ struct AERTEXConversationNativeView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         if detail.messages.isEmpty {
-                            ContentUnavailableView("没有消息", systemImage: "bubble.left.and.text.bubble.right")
+                            Label("没有消息", systemImage: "bubble.left.and.text.bubble.right")
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .padding(18)
