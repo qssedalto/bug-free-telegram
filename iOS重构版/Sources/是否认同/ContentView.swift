@@ -14,7 +14,6 @@ struct ContentView: View {
     @State private var activeStory: StorySession?
     @State private var showDashboard = false
     @State private var showSettings = false
-    @State private var showAERTEX = false
     @State private var titleTapCount = 0
     @State private var secretMessage: String?
 
@@ -37,9 +36,10 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
             }
             .background { LiquidGlassBackdrop() }
+            .navigationTitle("是否认同")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button { showAERTEX = true } label: { Label("AERTEX", systemImage: "person.crop.circle.fill") }
                     Button { showDashboard = true } label: { Label("数据面板", systemImage: "chart.xyaxis.line") }
                     Button { showSettings = true } label: { Label("设置", systemImage: "gearshape.fill") }
                 }
@@ -56,9 +56,6 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView().environmentObject(preferences)
-            }
-            .sheet(isPresented: $showAERTEX) {
-                AERTEXHubView()
             }
             .alert("隐藏档案", isPresented: Binding(
                 get: { secretMessage != nil },
@@ -93,7 +90,7 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text("1.1.0")
+            Text("趣味模块")
                 .font(.caption.monospacedDigit().weight(.bold))
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .liquidGlassCapsule(tint: preferences.accentColor.opacity(0.16))
