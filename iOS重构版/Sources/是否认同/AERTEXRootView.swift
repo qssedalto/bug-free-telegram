@@ -231,7 +231,8 @@ struct AERTEXHomeView: View {
                         footer
                     }
                     .padding(.horizontal, sizeClass == .regular ? 30 : 18)
-                    .padding(.vertical, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 130)
                     .frame(maxWidth: 940)
                     .frame(maxWidth: .infinity)
                 }
@@ -463,7 +464,11 @@ struct AERTEXServicesView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(18)
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                // The bottom floating control belongs to the root TabView;
+                // reserve extra content clearance inside nested ScrollViews.
+                .padding(.bottom, 132)
                 .frame(maxWidth: 800)
                 .frame(maxWidth: .infinity)
             }
