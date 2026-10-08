@@ -100,14 +100,12 @@ struct LiquidGlassContainer<Content: View>: View {
 /// Gives Liquid Glass something meaningful to refract instead of placing it over a flat fill.
 struct LiquidGlassBackdrop: View {
     @EnvironmentObject private var preferences: AppPreferences
+    @Environment(\.colorScheme) private var systemColorScheme
 
     var accent: Color? = nil
     var intense = false
 
-    private var base: Color {
-        if preferences.theme == .black { return .black }
-        return Color(uiColor: .systemGroupedBackground)
-    }
+    private var base: Color { Color(uiColor: .systemGroupedBackground) }
 
     private var primaryAccent: Color { accent ?? preferences.accentColor }
 
@@ -124,7 +122,7 @@ struct LiquidGlassBackdrop: View {
                     .offset(x: -shortest * 0.35, y: -shortest * 0.42)
 
                 Circle()
-                    .fill(Color.cyan.opacity(preferences.theme == .light ? 0.16 : 0.11))
+                    .fill(Color.cyan.opacity(systemColorScheme == .light ? 0.16 : 0.11))
                     .frame(width: shortest * 0.76, height: shortest * 0.76)
                     .blur(radius: shortest * 0.18)
                     .offset(x: proxy.size.width - shortest * 0.42, y: shortest * 0.34)
