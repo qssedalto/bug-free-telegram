@@ -117,6 +117,7 @@ struct AERTEXIntelligenceNativeView: View {
         .scrollContentBackground(.hidden)
         .background { LiquidGlassBackdrop() }
         .navigationTitle("Intelligence")
+        .aertexGlassBackButton()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { Task { await load() } } label: {
@@ -199,7 +200,7 @@ struct AERTEXIntelligenceNativeView: View {
         do {
             try await auth.mutateAIConversation(conversationId: deleteId, method: "DELETE")
             error = nil
-            deleteId = nil
+            self.deleteId = nil
         } catch {
             self.error = error.localizedDescription
         }
@@ -293,6 +294,7 @@ struct AERTEXConversationNativeView: View {
         }
         .background { LiquidGlassBackdrop() }
         .navigationTitle(currentId == nil ? "新对话" : liveTitle)
+        .aertexGlassBackButton()
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             composer

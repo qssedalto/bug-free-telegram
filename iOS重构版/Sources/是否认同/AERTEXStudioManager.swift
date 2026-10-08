@@ -135,6 +135,7 @@ struct AERTEXStudioManagerView: View {
             }
         }
         .navigationTitle("Studio 项目与任务")
+        .aertexGlassBackButton()
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await load() }
         .task { await load() }

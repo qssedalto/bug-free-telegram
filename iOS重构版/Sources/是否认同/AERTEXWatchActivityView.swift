@@ -123,6 +123,7 @@ struct AERTEXWatchBucketView: View {
             }
         }
         .navigationTitle("Watch 活动时间线")
+        .aertexGlassBackButton()
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await load() }
         .task { await load() }

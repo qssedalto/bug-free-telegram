@@ -163,6 +163,7 @@ struct AERTEXStudioNativeView: View {
             }
         }
         .navigationTitle("AERTEX Studio")
+        .aertexGlassBackButton()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { Task { await load() } } label: {
@@ -259,6 +260,7 @@ struct AERTEXWatchNativeView: View {
             }
         }
         .navigationTitle("AERTEX Watch")
+        .aertexGlassBackButton()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { Task { await load() } } label: { Image(systemName: "arrow.clockwise") }
