@@ -6,6 +6,7 @@ struct AERTEXApp: App {
     @StateObject private var auth = AERTEXAuthStore()
     @StateObject private var preferences = AppPreferences()
     @StateObject private var runtime = RuntimeStore()
+    @State private var watchBridge: AERTEXWatchPhoneBridge?
 
     var body: some Scene {
         WindowGroup {
@@ -37,6 +38,9 @@ struct AERTEXApp: App {
             .environmentObject(runtime)
             .tint(preferences.accentControlColor)
             .task {
+                if watchBridge == nil {
+                    watchBridge = AERTEXWatchPhoneBridge(auth: auth)
+                }
                 if auth.state == .restoring {
                     await auth.restore()
                 }
