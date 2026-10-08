@@ -82,14 +82,17 @@ struct AERTEXRootView: View {
     var body: some View {
         TabView(selection: $selection) {
             AERTEXHomeView(selection: $selection, showAgree: $showAgree)
+                .toolbar(.hidden, for: .tabBar)
                 .tabItem { Label("首页", systemImage: "house.fill") }
                 .tag(AERTEXSection.home)
 
             AERTEXServicesView(showAgree: $showAgree)
+                .toolbar(.hidden, for: .tabBar)
                 .tabItem { Label("服务", systemImage: "square.grid.2x2.fill") }
                 .tag(AERTEXSection.services)
 
             AERTEXHubView()
+                .toolbar(.hidden, for: .tabBar)
                 .tabItem { Label("我的", systemImage: "person.crop.circle.fill") }
                 .tag(AERTEXSection.account)
         }
