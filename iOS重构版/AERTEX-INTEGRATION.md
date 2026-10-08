@@ -2,7 +2,7 @@
 
 ## 定位（2026-10-08 调整）
 
-主产品是独立的 **AERTEX iOS App**，不是以「是否认同」为主界面的客户端或换皮 App。「是否认同」是 AERTEX 内部的**单独功能模块**，可以从首页卡片或底部标签进入。欢迎页、服务目录、账户中心及主题体系由 AERTEX 统一管理。
+主产品是独立的 **AERTEX iOS App**，不是以「是否认同」为主界面的客户端或换皮 App。「是否认同」是 AERTEX 内部的**单独功能模块**，从首页「我的应用」或服务页「内置应用」进入，不占据一级底部导航。欢迎页、服务目录、账户中心及主题体系由 AERTEX 统一管理。
 
 应用仅作为 AERTEX 服务 API 的客户端，不在 iPhone 上运行公网 API 服务。
 
@@ -24,18 +24,22 @@ AERTEX (iOS 主应用)
 │  ├─ 服务入口（网页，清晰标注）
 │  └─ 是否认同快捷入口
 ├─ 服务 AERTEXServicesView
+│  ├─ 是否认同（全屏内置应用入口）
 │  ├─ Studio (qsseda.com)
 │  ├─ Work (work.qsseda.com)
 │  ├─ Intelligence (gpt.qsseda.com)
 │  └─ Watch (aw.qsseda.com)
-├─ 是否认同 ContentView
-│  ├─ 三分支剧情、成就、历史
-│  ├─ 数据面板
-│  └─ 模块专属设置
 └─ 我的 AERTEXHubView
    ├─ 账户资料、连接状态、退出
    ├─ 会话与强调色同步
    └─ 账户中心、主题外观链接
+
+内置应用（从首页/服务进入，不属于底部导航）：
+└─ 是否认同 ContentView
+   ├─ 三分支剧情、成就、历史
+   ├─ 数据面板
+   ├─ 模块专属设置
+   └─ 返回 AERTEX
 ```
 
 已有「是否认同」的业务逻辑和 `RuntimeStore` / `AppPreferences` 数据键不迁移、不重置，避免旧装机用户丢失进度。外部 App 名改为 AERTEX 2.0.0，内部 Bundle ID、模块目录、工具链 product 暂留原名以保留升级兼容性。
