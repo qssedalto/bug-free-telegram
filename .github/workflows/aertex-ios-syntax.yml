@@ -1,0 +1,38 @@
+name: AERTEX iOS Swift Syntax
+
+on:
+  pull_request:
+    paths:
+      - "iOS重构版/Sources/**/*.swift"
+      - "iOS重构版/Package.swift"
+      - ".github/workflows/aertex-ios-syntax.yml"
+  push:
+    branches: [main]
+    paths:
+      - "iOS重构版/Sources/**/*.swift"
+      - "iOS重构版/Package.swift"
+      - ".github/workflows/aertex-ios-syntax.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check Swift parser availability
+        run: swiftc --version
+      - name: Parse native iOS Swift source
+        run: |
+          find "iOS重构版/Sources" -name '*.swift' -print0 | xargs -0 swiftc -frontend -parse
+      - name: Enforce native service contract and no embedded WebViews
+        run: |
+          grep -q 'AERTEXStudioNativeView' "iOS重构版/Sources/是否认同/AERTEXNativeServices.swift"
+          grep -q 'AERTEXIntelligenceNativeView' "iOS重构版/Sources/是否认同/AERTEXNativeServices.swift"
+          grep -q 'AERTEXWatchNativeView' "iOS重构版/Sources/是否认同/AERTEXNativeServices.swift"
+          ! grep -E '(WKWebView|UIWebView|SFSafariViewController)' "iOS重构版/Sources/是否认同/AERTEXNativeServices.swift"
+          grep -q 'AERTEXServiceLink(service: service)' "iOS重构版/Sources/是否认同/AERTEXRootView.swift"
+
+# This is parser/static validation only; full iOS SDK compilation and
+# Apple code signing still require the user's configured xtool environment.
