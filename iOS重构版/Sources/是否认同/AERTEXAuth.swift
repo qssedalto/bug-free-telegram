@@ -313,6 +313,76 @@ final class AERTEXAuthStore: ObservableObject {
     }
 
 
+    /// First-party Studio mutations: existing server R2 engines enforce owner
+    /// prefixes and validate project/task fields. No service-role API key.
+    func nativeStudioMutation<Response: Decodable>(
+        _ type: Response.Type,
+        resource: String,
+        method: String,
+        id: String? = nil,
+        values: [String: Any]? = nil
+    ) async throws -> Response {
+        guard ["projects", "tasks"].contains(resource),
+              ["POST", "PUT", "DELETE"].contains(method),
+              (method == "POST" || id != nil),
+              isAuthenticated else {
+            throw AERTEXNativeError(message: "无效的 Studio 操作或登录状态。")
+        }
+        do {
+            return try await performStudioMutation(
+                type, resource: resource, method: method, id: id, values: values
+            )
+        } catch let error as AERTEXNativeError where error.statusCode == 401 {
+            guard await refreshAccount() else {
+                throw AERTEXNativeError(message: "登录会话已经过期。", statusCode: 401)
+            }
+            return try await performStudioMutation(
+                type, resource: resource, method: method, id: id, values: values
+            )
+        }
+    }
+
+    private func performStudioMutation<Response: Decodable>(
+        _ type: Response.Type, resource: String, method: String,
+        id: String?, values: [String: Any]?
+    ) async throws -> Response {
+        guard let accessToken,
+              var components = URLComponents(
+                string: "https://qsseda.com/api/native/studio/" + resource
+              ) else {
+            throw AERTEXNativeError(message: "没有有效的访问令牌。", statusCode: 401)
+        }
+        if let id { components.queryItems = [URLQueryItem(name: "id", value: id)] }
+        guard let url = components.url else {
+            throw AERTEXNativeError(message: "Studio 请求地址无效。")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.timeoutInterval = 30
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        if let values {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: values)
+        } else if method == "DELETE" {
+            request.httpBody = Data("{}".utf8)
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AERTEXNativeError(message: "Studio 没有返回有效响应。")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let payload = try? JSONDecoder().decode(AERTEXErrorResponse.self, from: data)
+            throw AERTEXNativeError(
+                message: payload?.error ?? "Studio 请求失败（HTTP \(http.statusCode)）。",
+                statusCode: http.statusCode
+            )
+        }
+        return try JSONDecoder().decode(Response.self, from: data)
+    }
+
     /// Uses the existing first-party Intelligence gateway. No model provider
     /// secret is ever handled by the iOS app. The server enforces quota/RLS.
     func sendAIMessage(
