@@ -219,7 +219,7 @@ struct AERTEXIntelligenceNativeView: View {
             )
             error = nil
         } catch {
-            error = error.localizedDescription
+            self.error = error.localizedDescription
         }
     }
 }
@@ -542,7 +542,7 @@ struct AERTEXConversationNativeView: View {
             } catch is CancellationError {
                 error = "已停止生成。未完成的回复不计为成功。"
             } catch {
-                error = error.localizedDescription
+                self.error = error.localizedDescription
                 if input.isEmpty { input = prompt }
             }
             isSending = false
