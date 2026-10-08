@@ -31,6 +31,10 @@ private struct AERTEXSessionResponse: Decodable {
     let code: String?
 }
 
+private struct AERTEXLogoutResponse: Decodable {
+    let success: Bool
+}
+
 private struct AERTEXErrorResponse: Decodable {
     let error: String?
     let code: String?
@@ -47,6 +51,8 @@ final class AERTEXAuthStore: ObservableObject {
     @Published private(set) var state: State = .restoring
     @Published private(set) var user: AERTEXUser?
     @Published var errorMessage: String?
+    @Published private(set) var lastSyncedAt: Date?
+    @Published private(set) var isRefreshing = false
 
     private let baseURL = URL(string: "https://auth.qsseda.com")!
     private let session: URLSession
@@ -74,8 +80,14 @@ final class AERTEXAuthStore: ObservableObject {
             )
             accept(response)
         } catch {
-            clearLocalSession()
-            errorMessage = nil
+            if let status = (error as? AERTEXAuthError)?.statusCode, [400, 401, 403].contains(status) {
+                clearLocalSession()
+                errorMessage = nil
+            } else {
+                // A transient outage must not erase a refresh token.
+                state = .signedOut
+                errorMessage = "暂时无法连接 AERTEX，设备上的会话凭据已保留。可重试恢复。"
+            }
         }
     }
 
@@ -94,7 +106,7 @@ final class AERTEXAuthStore: ObservableObject {
                 jsonBody: ["email": cleanEmail, "password": password]
             )
             accept(response)
-            return true
+            return isAuthenticated
         } catch {
             errorMessage = (error as? AERTEXAuthError)?.localizedDescription ?? "无法连接 AERTEX ID，请稍后再试。"
             return false
@@ -110,11 +122,11 @@ final class AERTEXAuthStore: ObservableObject {
                 bearer: accessToken
             )
             guard response.authenticated, response.authorized, let user = response.user else {
-                clearLocalSession()
                 return false
             }
             self.user = user
             self.state = .signedIn
+            self.lastSyncedAt = Date()
             return true
         } catch {
             return false
@@ -122,9 +134,14 @@ final class AERTEXAuthStore: ObservableObject {
     }
 
     func refreshAccount() async -> Bool {
+        guard !isRefreshing else { return false }
+        isRefreshing = true
+        defer { isRefreshing = false }
+
         if await validateSession() { return true }
 
         guard let refreshToken = keychain.read(account: "refresh-token"), !refreshToken.isEmpty else {
+            clearLocalSession()
             return false
         }
 
@@ -137,6 +154,10 @@ final class AERTEXAuthStore: ObservableObject {
             accept(response)
             return isAuthenticated
         } catch {
+            if let status = (error as? AERTEXAuthError)?.statusCode, [400, 401, 403].contains(status) {
+                clearLocalSession()
+            }
+            // Network and server errors do not revoke a previously valid local session.
             return false
         }
     }
@@ -145,7 +166,7 @@ final class AERTEXAuthStore: ObservableObject {
         let token = accessToken
         clearLocalSession()
         if let token {
-            let _: AERTEXSessionResponse? = try? await request(
+            let _: AERTEXLogoutResponse? = try? await request(
                 path: "/api/app/logout",
                 method: "POST",
                 bearer: token
@@ -164,12 +185,14 @@ final class AERTEXAuthStore: ObservableObject {
         keychain.save(response.refresh_token, account: "refresh-token")
         user = response.user
         state = .signedIn
+        lastSyncedAt = Date()
     }
 
     private func clearLocalSession() {
         accessToken = nil
         keychain.delete(account: "refresh-token")
         user = nil
+        lastSyncedAt = nil
         state = .signedOut
     }
 
@@ -183,7 +206,7 @@ final class AERTEXAuthStore: ObservableObject {
         request.httpMethod = method
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("是否认同/1.1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("AERTEX/2.0.0 (iOS)", forHTTPHeaderField: "User-Agent")
         if let bearer {
             request.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
         }
@@ -199,7 +222,10 @@ final class AERTEXAuthStore: ObservableObject {
 
         guard (200..<300).contains(response.statusCode) else {
             let payload = try? JSONDecoder().decode(AERTEXErrorResponse.self, from: data)
-            throw AERTEXAuthError(message: payload?.error ?? "AERTEX 登录失败（HTTP \(response.statusCode)）。")
+            throw AERTEXAuthError(
+                message: payload?.error ?? "AERTEX 请求失败（HTTP \(response.statusCode)）。",
+                statusCode: response.statusCode
+            )
         }
 
         do {
@@ -212,6 +238,7 @@ final class AERTEXAuthStore: ObservableObject {
 
 private struct AERTEXAuthError: LocalizedError {
     let message: String
+    var statusCode: Int? = nil
     var errorDescription: String? { message }
 }
 

@@ -74,8 +74,12 @@ final class AppPreferences: ObservableObject {
     }
 
     func applyAERTEXAccent(_ id: String?) {
-        guard let id, AERTEXAccent.byID[id] != nil, id != aertexAccentId else { return }
-        aertexAccentId = id
+        // If an account has no explicit accent, use the authoritative
+        // AERTEX default instead of inheriting another account's old color.
+        let validated = id.flatMap { AERTEXAccent.byID[$0] == nil ? nil : $0 }
+        let resolved = validated ?? AERTEXAccent.defaultID
+        guard resolved != aertexAccentId else { return }
+        aertexAccentId = resolved
     }
 
     func restoreDefaults() {

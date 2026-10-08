@@ -8,6 +8,8 @@ struct StorySession: Identifiable {
 }
 
 struct ContentView: View {
+    var presentedFromAERTEX = false
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var preferences: AppPreferences
     @EnvironmentObject private var runtime: RuntimeStore
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -36,7 +38,18 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
             }
             .background { LiquidGlassBackdrop() }
+            .navigationTitle("是否认同")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if presentedFromAERTEX {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Label("返回 AERTEX", systemImage: "chevron.left")
+                        }
+                    }
+                }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button { showDashboard = true } label: { Label("数据面板", systemImage: "chart.xyaxis.line") }
                     Button { showSettings = true } label: { Label("设置", systemImage: "gearshape.fill") }
@@ -88,7 +101,7 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text("1.1.0")
+            Text("趣味模块")
                 .font(.caption.monospacedDigit().weight(.bold))
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .liquidGlassCapsule(tint: preferences.accentColor.opacity(0.16))

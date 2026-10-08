@@ -8,6 +8,7 @@ struct AERTEXLoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var isSubmitting = false
+    @State private var isRestoring = false
     @FocusState private var focusedField: Field?
 
     private enum Field {
@@ -30,10 +31,10 @@ struct AERTEXLoginView: View {
                             .font(.system(size: 13, weight: .bold, design: .rounded))
                             .tracking(2.2)
                             .foregroundStyle(.secondary)
-                        Text("登录以继续使用「是否认同」")
+                        Text("登录你的 AERTEX")
                             .font(.system(size: 28, weight: .black, design: .rounded))
                             .multilineTextAlignment(.center)
-                        Text("使用你的 AERTEX 账户验证身份。密码只用于本次 HTTPS 登录，不会保存在设备上。")
+                        Text("连接你的个人数字空间。登录后可使用 AERTEX 服务和「是否认同」等内置功能。密码仅用于本次 HTTPS 验证。")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -90,6 +91,20 @@ struct AERTEXLoginView: View {
                         .opacity(isSubmitting ? 0.8 : 1)
                     }
                     .frame(maxWidth: 460)
+
+                    if auth.errorMessage != nil {
+                        Button {
+                            guard !isRestoring else { return }
+                            isRestoring = true
+                            Task {
+                                await auth.restore()
+                                isRestoring = false
+                            }
+                        } label: {
+                            Label(isRestoring ? "正在重连…" : "重试恢复现有会话", systemImage: "arrow.clockwise")
+                        }
+                        .disabled(isRestoring)
+                    }
 
                     VStack(spacing: 7) {
                         Label("由 auth.qsseda.com 安全验证", systemImage: "lock.shield.fill")

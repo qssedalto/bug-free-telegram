@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 @main
-struct AgreeQuestionApp: App {
+struct AERTEXApp: App {
     @StateObject private var auth = AERTEXAuthStore()
     @StateObject private var preferences = AppPreferences()
     @StateObject private var runtime = RuntimeStore()
@@ -25,8 +25,9 @@ struct AgreeQuestionApp: App {
                     AERTEXLoginView()
 
                 case .signedIn:
-                    ContentView()
+                    AERTEXRootView()
                         .task {
+                            // Preserve the module's local streak/snapshot data when launching AERTEX.
                             runtime.checkIn(amount: DebtEngine.amount(on: Date(), preferences: preferences))
                         }
                 }
@@ -34,7 +35,6 @@ struct AgreeQuestionApp: App {
             .environmentObject(auth)
             .environmentObject(preferences)
             .environmentObject(runtime)
-            .preferredColorScheme(preferences.colorScheme)
             .tint(preferences.accentControlColor)
             .task {
                 if auth.state == .restoring {
