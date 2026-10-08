@@ -113,6 +113,15 @@ struct AERTEXStudioNativeView: View {
                         LabeledContent("草稿", value: String(overview.counts.drafts))
                         LabeledContent("笔记", value: String(overview.counts.notes))
                     }
+                    Section {
+                        NavigationLink {
+                            AERTEXStudioManagerView()
+                        } label: {
+                            Label("管理项目与任务", systemImage: "square.and.pencil")
+                                .font(.headline)
+                        }
+                    }
+
                     Section("正在进行的项目") {
                         if overview.projects.isEmpty {
                             Text("目前没有活跃项目").foregroundStyle(.secondary)
@@ -140,7 +149,7 @@ struct AERTEXStudioNativeView: View {
                         }
                     }
                     Section {
-                        Label("数据来自 AERTEX Studio 的个人工作台接口，当前为只读视图。", systemImage: "lock.shield")
+                        Label("项目与任务可以进入管理页进行真实云端编辑，统计来自个人工作台。", systemImage: "lock.shield")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
