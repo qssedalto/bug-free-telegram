@@ -5,7 +5,6 @@ import SwiftUI
 enum AERTEXSection: Hashable {
     case home
     case services
-    case agree
     case account
 }
 
@@ -48,26 +47,26 @@ struct AERTEXRootView: View {
     @EnvironmentObject private var preferences: AppPreferences
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: AERTEXSection = .home
+    @State private var showAgree = false
 
     var body: some View {
         TabView(selection: $selection) {
-            AERTEXHomeView(selection: $selection)
+            AERTEXHomeView(selection: $selection, showAgree: $showAgree)
                 .tabItem { Label("首页", systemImage: "house.fill") }
                 .tag(AERTEXSection.home)
 
-            AERTEXServicesView()
+            AERTEXServicesView(showAgree: $showAgree)
                 .tabItem { Label("服务", systemImage: "square.grid.2x2.fill") }
                 .tag(AERTEXSection.services)
-
-            ContentView()
-                .tabItem { Label("是否认同", systemImage: "questionmark.bubble.fill") }
-                .tag(AERTEXSection.agree)
 
             AERTEXHubView()
                 .tabItem { Label("我的", systemImage: "person.crop.circle.fill") }
                 .tag(AERTEXSection.account)
         }
         .tint(preferences.accentControlColor)
+        .fullScreenCover(isPresented: $showAgree) {
+            ContentView(presentedFromAERTEX: true)
+        }
         .onChange(of: scenePhase) { phase in
             guard phase == .active else { return }
             Task {
@@ -83,6 +82,7 @@ struct AERTEXHomeView: View {
     @EnvironmentObject private var auth: AERTEXAuthStore
     @EnvironmentObject private var preferences: AppPreferences
     @Binding var selection: AERTEXSection
+    @Binding var showAgree: Bool
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var greetingName: String {
@@ -217,7 +217,7 @@ struct AERTEXHomeView: View {
 
     private var agreeCard: some View {
         Button {
-            selection = .agree
+            showAgree = true
         } label: {
             HStack(spacing: 15) {
                 Image(systemName: "questionmark.bubble.fill")
@@ -260,6 +260,7 @@ struct AERTEXHomeView: View {
 
 struct AERTEXServicesView: View {
     @EnvironmentObject private var preferences: AppPreferences
+    @Binding var showAgree: Bool
 
     var body: some View {
         NavigationStack {
@@ -273,6 +274,40 @@ struct AERTEXServicesView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.bottom, 4)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("内置应用")
+                            .font(.headline)
+                            .padding(.horizontal, 2)
+                        Button {
+                            showAgree = true
+                        } label: {
+                            HStack(spacing: 16) {
+                                Image(systemName: "questionmark.bubble.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(preferences.accentControlColor)
+                                    .frame(width: 38)
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text("是否认同")
+                                        .font(.headline)
+                                    Text("原生趣味模块 · 剧情与数据")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .foregroundStyle(.primary)
+                            .padding(20)
+                            .liquidGlassSurface(cornerRadius: 24, tint: preferences.accentColor.opacity(0.08), interactive: true)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Text("在线服务")
+                        .font(.headline)
+                        .padding(.horizontal, 2)
 
                     ForEach(AERTEXService.all) { service in
                         Link(destination: service.url) {
