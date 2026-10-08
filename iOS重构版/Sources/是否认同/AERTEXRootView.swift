@@ -17,11 +17,11 @@ struct AERTEXService: Identifiable {
 
     var url: URL { URL(string: address)! }
 
-    // Only published, independently verified AERTEX web entry points are listed.
-    // Until a documented mobile business API exists, these open as web services.
+    // The URLs are retained only for Safari fallback / the Work web entry point.
+    // Studio, Intelligence and Watch now navigate into verified native API views.
     static let studio = AERTEXService(
         id: "studio", title: "AERTEX Studio",
-        subtitle: "个人空间、设置与工作台", symbol: "square.grid.2x2.fill",
+        subtitle: "原生项目、任务与工作台", symbol: "square.grid.2x2.fill",
         address: "https://qsseda.com/zh-cn/dashboard"
     )
     static let work = AERTEXService(
@@ -31,15 +31,45 @@ struct AERTEXService: Identifiable {
     )
     static let intelligence = AERTEXService(
         id: "intelligence", title: "AERTEX Intelligence",
-        subtitle: "AI 助手与会话", symbol: "sparkles",
+        subtitle: "原生历史会话浏览", symbol: "sparkles",
         address: "https://gpt.qsseda.com"
     )
     static let watch = AERTEXService(
         id: "watch", title: "AERTEX Watch",
-        subtitle: "活动与设备数据", symbol: "applewatch",
+        subtitle: "原生活动同步状态", symbol: "applewatch",
         address: "https://aw.qsseda.com"
     )
     static let all = [studio, work, intelligence, watch]
+}
+
+/** A native SwiftUI destination for each supported first-party product.
+ * Work remains an explicit Safari link until its own mobile API is ready.
+ */
+struct AERTEXServiceLink<LabelContent: View>: View {
+    let service: AERTEXService
+    let label: () -> LabelContent
+
+    init(service: AERTEXService, @ViewBuilder label: @escaping () -> LabelContent) {
+        self.service = service
+        self.label = label
+    }
+
+    var body: some View {
+        if service.id == "work" {
+            Link(destination: service.url, label: label)
+        } else {
+            NavigationLink(destination: destination, label: label)
+        }
+    }
+
+    @ViewBuilder private var destination: some View {
+        switch service.id {
+        case "studio": AERTEXStudioNativeView()
+        case "intelligence": AERTEXIntelligenceNativeView()
+        case "watch": AERTEXWatchNativeView()
+        default: Text("服务暂不可用")
+        }
+    }
 }
 
 struct AERTEXRootView: View {
@@ -183,7 +213,7 @@ struct AERTEXHomeView: View {
     private var serviceGrid: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: sizeClass == .regular ? 250 : 150), spacing: 12)], spacing: 12) {
             ForEach(AERTEXService.all) { service in
-                Link(destination: service.url) {
+                AERTEXServiceLink(service: service) {
                     VStack(alignment: .leading, spacing: 10) {
                         Image(systemName: service.symbol)
                             .font(.title2)
@@ -199,7 +229,7 @@ struct AERTEXHomeView: View {
                             .lineLimit(2)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         HStack {
-                            Text("网页服务")
+                            Text(service.id == "work" ? "网页服务" : "原生服务")
                             Spacer()
                             Image(systemName: "arrow.up.right")
                         }
@@ -269,7 +299,7 @@ struct AERTEXServicesView: View {
                     VStack(alignment: .leading, spacing: 7) {
                         Text("连接 AERTEX")
                             .font(.title2.weight(.bold))
-                        Text("这里汇集已上线的 AERTEX 产品。支持原生 API 的功能会逐步接入；其他服务会打开对应的官方网页。")
+                        Text("Studio 工作台、Intelligence 会话和 Watch 同步状态已接入原生 API；Work 暂时仍由 Safari 打开。")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -310,7 +340,7 @@ struct AERTEXServicesView: View {
                         .padding(.horizontal, 2)
 
                     ForEach(AERTEXService.all) { service in
-                        Link(destination: service.url) {
+                        AERTEXServiceLink(service: service) {
                             HStack(spacing: 16) {
                                 Image(systemName: service.symbol)
                                     .font(.title2)
@@ -322,7 +352,7 @@ struct AERTEXServicesView: View {
                                     Text(service.subtitle)
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
-                                    Text("在网页中打开")
+                                    Text(service.id == "work" ? "在 Safari 中打开" : "打开原生页面")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
