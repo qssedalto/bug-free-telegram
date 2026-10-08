@@ -91,26 +91,21 @@ struct AERTEXRootView: View {
     @State private var dragSelection: AERTEXSection?
 
     var body: some View {
-        TabView(selection: $selection) {
-            AERTEXHomeView(selection: $selection, showAgree: $showAgree)
-                .toolbar(.hidden, for: .tabBar)
-                .tabItem { Label("首页", systemImage: "house.fill") }
-                .tag(AERTEXSection.home)
+        // The floating capsule is a *layout sibling*, not an overlay. This
+        // guarantees every ScrollView has real usable space above the bar.
+        VStack(spacing: 0) {
+            Group {
+                switch selection {
+                case .home:
+                    AERTEXHomeView(selection: $selection, showAgree: $showAgree)
+                case .services:
+                    AERTEXServicesView(showAgree: $showAgree)
+                case .account:
+                    AERTEXHubView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            AERTEXServicesView(showAgree: $showAgree)
-                .toolbar(.hidden, for: .tabBar)
-                .tabItem { Label("服务", systemImage: "square.grid.2x2.fill") }
-                .tag(AERTEXSection.services)
-
-            AERTEXHubView()
-                .toolbar(.hidden, for: .tabBar)
-                .tabItem { Label("我的", systemImage: "person.crop.circle.fill") }
-                .tag(AERTEXSection.account)
-        }
-        // iOS 27 floating capsule: hide the legacy opaque system bar while
-        // retaining TabView's navigation stacks and per-tab state.
-        .toolbar(.hidden, for: .tabBar)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
             if !tabChrome.hidden {
                 capsuleTabBar
                     .padding(.horizontal, 18)
@@ -118,6 +113,7 @@ struct AERTEXRootView: View {
                     .padding(.bottom, 12)
             }
         }
+        .background { LiquidGlassBackdrop() }
         .environmentObject(tabChrome)
         .tint(preferences.accentControlColor)
         .fullScreenCover(isPresented: $showAgree) {
@@ -229,7 +225,7 @@ struct AERTEXHomeView: View {
                     }
                     .padding(.horizontal, sizeClass == .regular ? 30 : 18)
                     .padding(.top, 20)
-                    .padding(.bottom, 130)
+                    .padding(.bottom, 20)
                     .frame(maxWidth: 940)
                     .frame(maxWidth: .infinity)
                 }
@@ -465,7 +461,7 @@ struct AERTEXServicesView: View {
                 .padding(.top, 18)
                 // The bottom floating control belongs to the root TabView;
                 // reserve extra content clearance inside nested ScrollViews.
-                .padding(.bottom, 132)
+                .padding(.bottom, 20)
                 .frame(maxWidth: 800)
                 .frame(maxWidth: .infinity)
             }
