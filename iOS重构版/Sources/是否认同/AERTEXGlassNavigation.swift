@@ -1,14 +1,29 @@
 import SwiftUI
 
-/// Keep the real iOS 26/27 system navigation back control. Apple renders the
-/// compact, chevron-only back action in native circular Liquid Glass; keeping
-/// it system-owned also preserves interactive edge-swipe navigation,
-/// accessibility, and automatic light/dark material adaptations.
+/// iOS 27 explicit round Liquid Glass chevron, rather than relying on an
+/// OS-selected bare navigation glyph. NavigationStack remains responsible
+/// for the destination stack and normal toolbar placement.
 private struct AERTEXGlassBackModifier: ViewModifier {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.tint) private var tint
+
     func body(content: Content) -> some View {
         content
-            .toolbarRole(.editor)
-            .toolbar(.visible, for: .navigationBar)
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(tint ?? .primary)
+                            .frame(width: 40, height: 40)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .liquidGlassCapsule(interactive: true)
+                    .accessibilityLabel("返回")
+                }
+            }
     }
 }
 
