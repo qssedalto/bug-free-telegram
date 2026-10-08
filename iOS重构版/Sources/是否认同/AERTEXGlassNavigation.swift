@@ -5,7 +5,6 @@ import SwiftUI
 /// for the destination stack and normal toolbar placement.
 private struct AERTEXGlassBackModifier: ViewModifier {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.tint) private var tint
 
     func body(content: Content) -> some View {
         content
@@ -15,7 +14,7 @@ private struct AERTEXGlassBackModifier: ViewModifier {
                     Button { dismiss() } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(tint ?? .primary)
+                            .foregroundStyle(.primary)
                             .frame(width: 40, height: 40)
                             .contentShape(Circle())
                     }
