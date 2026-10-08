@@ -53,6 +53,7 @@ final class AERTEXAuthStore: ObservableObject {
     @Published var errorMessage: String?
     @Published private(set) var lastSyncedAt: Date?
     @Published private(set) var isRefreshing = false
+    @Published private(set) var isUpdatingProfile = false
 
     private let baseURL = URL(string: "https://auth.qsseda.com")!
     private let session: URLSession
@@ -158,6 +159,64 @@ final class AERTEXAuthStore: ObservableObject {
                 clearLocalSession()
             }
             // Network and server errors do not revoke a previously valid local session.
+            return false
+        }
+    }
+
+    /// Update the profile in AERTEX ID through the first-party native API.
+    /// The server only accepts displayName and enforces the logged-in user.
+    func updateDisplayName(_ value: String) async -> Bool {
+        guard !isUpdatingProfile else { return false }
+        let name = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, name.unicodeScalars.count <= 120,
+              !name.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else {
+            errorMessage = "显示名称必须为 1–120 个有效字符。"
+            return false
+        }
+
+        isUpdatingProfile = true
+        errorMessage = nil
+        defer { isUpdatingProfile = false }
+
+        do {
+            if accessToken == nil {
+                guard await refreshAccount() else {
+                    errorMessage = "登录状态已失效，请重新登录。"
+                    return false
+                }
+            }
+
+            let updated: AERTEXSessionResponse
+            do {
+                updated = try await request(
+                    path: "/api/app/profile",
+                    method: "PATCH",
+                    jsonBody: ["displayName": name],
+                    bearer: accessToken
+                )
+            } catch {
+                // Access tokens expire; refresh once and retry the same validated mutation.
+                guard (error as? AERTEXAuthError)?.statusCode == 401,
+                      await refreshAccount() else { throw error }
+                updated = try await request(
+                    path: "/api/app/profile",
+                    method: "PATCH",
+                    jsonBody: ["displayName": name],
+                    bearer: accessToken
+                )
+            }
+
+            guard updated.authenticated, updated.authorized,
+                  let updatedUser = updated.user, updatedUser.status == "active" else {
+                errorMessage = "AERTEX 没有确认本次修改。"
+                return false
+            }
+            user = updatedUser
+            state = .signedIn
+            lastSyncedAt = Date()
+            return true
+        } catch {
+            errorMessage = (error as? AERTEXAuthError)?.localizedDescription ?? "无法保存显示名称，请检查网络或稍后重试。"
             return false
         }
     }
