@@ -1,4 +1,4 @@
-# AERTEX iOS 原生应用（2.0）
+# AERTEX iOS 原生应用（2.0.1）
 
 **AERTEX 是主 App，「是否认同」只是其中的一个附属功能。** 本工程从原有「是否认同」SwiftUI iOS 版本升级而来，保留原先的剧情与本地数据模型，重新建立顶层产品结构。
 
@@ -26,3 +26,10 @@
 现有 `xtool.yml` 与 `Package.swift` 仍供原工作流使用；生成的 IPA 如果未签名仍需 Apple 开发签名才能安装真机。
 
 在合并前必须使用 Apple SDK 实际编译、安装，并检查启动、四个底部标签、登录与断网重连、主站配色、系统深浅色及游戏本地数据迁移。此 GitHub 分支尚未完成 Apple 真机验收。
+
+## 2.0.1 原生接口迭代
+
+- 「我的」页面提供真正的原生显示名称编辑表单（非 WebView）。
+- `AERTEXAuthStore.updateDisplayName` 通过 `PATCH /api/app/profile` 更新自己账户的资料；访问令牌过期时尝试刷新后重试。
+- **配套依赖：** `qssed.studio` Auth Worker 需首先发布新的 `/api/app/profile` 路由；上线前验证数据库 RLS、账号状态和同步结果。
+- 界面仍保留独立网站服务入口，尚未把 Work、Watch、Intelligence 的业务页面伪装成原生功能。
