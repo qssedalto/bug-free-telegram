@@ -142,7 +142,7 @@ struct AERTEXHomeView: View {
             }
 
             VStack(alignment: .leading, spacing: 5) {
-                Text("欢迎回来，\\(greetingName)")
+                Text("欢迎回来，\(greetingName)")
                     .font(.title2.weight(.bold))
                     .lineLimit(2)
                     .minimumScaleFactor(0.76)
