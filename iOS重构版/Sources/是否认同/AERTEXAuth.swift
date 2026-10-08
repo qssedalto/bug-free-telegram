@@ -31,6 +31,10 @@ private struct AERTEXSessionResponse: Decodable {
     let code: String?
 }
 
+private struct AERTEXLogoutResponse: Decodable {
+    let success: Bool
+}
+
 private struct AERTEXErrorResponse: Decodable {
     let error: String?
     let code: String?
@@ -76,7 +80,7 @@ final class AERTEXAuthStore: ObservableObject {
             )
             accept(response)
         } catch {
-            if (error as? AERTEXAuthError)?.statusCode == 401 {
+            if let status = (error as? AERTEXAuthError)?.statusCode, [400, 401, 403].contains(status) {
                 clearLocalSession()
                 errorMessage = nil
             } else {
@@ -102,7 +106,7 @@ final class AERTEXAuthStore: ObservableObject {
                 jsonBody: ["email": cleanEmail, "password": password]
             )
             accept(response)
-            return true
+            return isAuthenticated
         } catch {
             errorMessage = (error as? AERTEXAuthError)?.localizedDescription ?? "无法连接 AERTEX ID，请稍后再试。"
             return false
@@ -150,7 +154,7 @@ final class AERTEXAuthStore: ObservableObject {
             accept(response)
             return isAuthenticated
         } catch {
-            if let status = (error as? AERTEXAuthError)?.statusCode, status == 400 || status == 401 {
+            if let status = (error as? AERTEXAuthError)?.statusCode, [400, 401, 403].contains(status) {
                 clearLocalSession()
             }
             // Network and server errors do not revoke a previously valid local session.
@@ -162,7 +166,7 @@ final class AERTEXAuthStore: ObservableObject {
         let token = accessToken
         clearLocalSession()
         if let token {
-            let _: AERTEXSessionResponse? = try? await request(
+            let _: AERTEXLogoutResponse? = try? await request(
                 path: "/api/app/logout",
                 method: "POST",
                 bearer: token
@@ -202,7 +206,7 @@ final class AERTEXAuthStore: ObservableObject {
         request.httpMethod = method
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("是否认同/1.1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("AERTEX/2.0.0 (iOS)", forHTTPHeaderField: "User-Agent")
         if let bearer {
             request.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
         }
