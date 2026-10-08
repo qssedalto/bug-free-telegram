@@ -346,9 +346,24 @@ struct AERTEXConversationNativeView: View {
                 }
                 .padding(.horizontal, 15)
                 .padding(.top, 20)
-                .padding(.bottom, 16)
+                .padding(.bottom, 36)
             }
             .scrollDismissesKeyboard(.interactively)
+            // A history request usually fills messages while the loading
+            // placeholder is still on screen. The old onChange(messages.count)
+            // only fired before the ScrollView existed, so history opened at
+            // the first message. Scroll after the actual transcript mounts.
+            .task(id: isLoading) {
+                guard !isLoading, !messages.isEmpty else { return }
+                try? await Task.sleep(nanoseconds: 180_000_000)
+                guard !Task.isCancelled else { return }
+                proxy.scrollTo(conversationScrollId, anchor: .bottom)
+                // KaTeX/web text canvas can refine its height after load.
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                if !Task.isCancelled {
+                    proxy.scrollTo(conversationScrollId, anchor: .bottom)
+                }
+            }
             .onChange(of: messages.count) { _ in
                 withAnimation(.easeOut(duration: 0.18)) {
                     proxy.scrollTo(conversationScrollId, anchor: .bottom)
