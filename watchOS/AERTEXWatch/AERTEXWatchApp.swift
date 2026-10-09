@@ -59,7 +59,6 @@ struct AERTEXWatchDashboard: View {
                                     .foregroundStyle(.secondary)
                                 Text(sync)
                                     .font(.footnote)
-                                    .textSelection(.enabled)
                             }
                         }
                         if let updated = bridge.lastUpdated {
