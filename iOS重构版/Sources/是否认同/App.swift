@@ -45,6 +45,15 @@ struct AERTEXApp: App {
                     await auth.restore()
                 }
             }
+            // Publish only a sanitized Watch status. Session credentials
+            // remain on the iPhone, including when the account changes.
+            .task(id: auth.state) {
+                if auth.isAuthenticated {
+                    await watchBridge?.publishStatus()
+                } else {
+                    watchBridge?.clearStatus()
+                }
+            }
             .task(id: auth.user?.accentId) {
                 preferences.applyAERTEXAccent(auth.user?.accentId)
             }
