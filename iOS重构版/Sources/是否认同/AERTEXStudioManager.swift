@@ -50,7 +50,7 @@ struct AERTEXStudioManagerView: View {
     var body: some View {
         List {
             Section {
-                Text("项目和任务直接保存在 AERTEX Studio 的云端工作台。此处所有操作均作用于当前登录账户。")
+                AERTEXBrandedText("项目和任务直接保存在 AERTEX Studio 的云端工作台。此处所有操作均作用于当前登录账户。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
