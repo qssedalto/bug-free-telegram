@@ -46,6 +46,14 @@ struct AERTEXHubView: View {
             .navigationTitle("我的 AERTEX")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 6) {
+                        Text("我的").font(.headline)
+                        AERTEXWordmarkView(height: 16)
+                    }
+                }
+            }
+            .toolbar {
                 if presentedAsSheet {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("完成") { dismiss() }
