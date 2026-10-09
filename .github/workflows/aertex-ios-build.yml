@@ -109,7 +109,6 @@ jobs:
             -project "iOS重构版/AERTEX.xcodeproj" \
             -scheme AERTEX \
             -configuration Release \
-            -sdk iphoneos \
             -destination "generic/platform=iOS" \
             -derivedDataPath "$RUNNER_TEMP/aertex-derived" \
             CODE_SIGNING_ALLOWED=NO \
