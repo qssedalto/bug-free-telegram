@@ -34,16 +34,6 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SUPPORTS_MACCATALYST: "NO"
-schemes:
-  AERTEX:
-    build:
-      targets:
-        AERTEX: all
-    run:
-      config: Debug
-    archive:
-      config: Release
-
   AERTEXWatch:
     type: application
     platform: watchOS
@@ -69,6 +59,16 @@ schemes:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "4"
         SKIP_INSTALL: "NO"
+schemes:
+  AERTEX:
+    build:
+      targets:
+        AERTEX: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
   AERTEXWatch:
     build:
       targets:
