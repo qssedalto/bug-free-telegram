@@ -24,6 +24,16 @@ struct AERTEXAIConfiguration: Decodable {
     let default_model: String?
 }
 
+/// Measures actual laid-out transcript height. WKWebView renders Markdown
+/// asynchronously; its final height can arrive well after the message count
+/// has stopped changing, so a message-count scroll alone is insufficient.
+private struct AERTEXTranscriptHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 private struct AERTEXChatLine: Identifiable {
     let id: UUID
     let role: String
@@ -241,6 +251,8 @@ struct AERTEXConversationNativeView: View {
     @State private var isSending = false
     @State private var replyTask: Task<Void, Never>?
     @FocusState private var inputFocused: Bool
+    // Do not unexpectedly jump to the bottom when the user scrolls upward.
+    @State private var followNewest = true
 
     private let initialId: String?
     private let title: String
@@ -296,6 +308,18 @@ struct AERTEXConversationNativeView: View {
         .navigationTitle(currentId == nil ? "新对话" : liveTitle)
         .aertexGlassBackButton()
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if !followNewest && !messages.isEmpty {
+                    Button {
+                        followNewest = true
+                    } label: {
+                        Image(systemName: "arrow.down.to.line")
+                    }
+                    .accessibilityLabel("跳至最新消息")
+                }
+            }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             composer
                 .padding(.horizontal, 12)
@@ -346,9 +370,33 @@ struct AERTEXConversationNativeView: View {
                 }
                 .padding(.horizontal, 15)
                 .padding(.top, 20)
-                .padding(.bottom, 36)
+                .padding(.bottom, 18)
+                .background {
+                    GeometryReader { geometry in
+                        Color.clear.preference(
+                            key: AERTEXTranscriptHeightKey.self,
+                            value: geometry.size.height
+                        )
+                    }
+                }
             }
             .scrollDismissesKeyboard(.interactively)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 14)
+                    .onChanged { _ in
+                        followNewest = false
+                    }
+            )
+            .onPreferenceChange(AERTEXTranscriptHeightKey.self) { _ in
+                guard followNewest else { return }
+                // A height change also catches late WKWebView formula/code
+                // layout updates, without covering content with the composer.
+                DispatchQueue.main.async {
+                    if followNewest {
+                        proxy.scrollTo(conversationScrollId, anchor: .bottom)
+                    }
+                }
+            }
             // A history request usually fills messages while the loading
             // placeholder is still on screen. The old onChange(messages.count)
             // only fired before the ScrollView existed, so history opened at
@@ -362,17 +410,19 @@ struct AERTEXConversationNativeView: View {
                 Task { @MainActor in
                     for delay in [120, 320, 700, 1400] {
                         try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
-                        guard !Task.isCancelled else { return }
+                        guard !Task.isCancelled, followNewest else { return }
                         proxy.scrollTo(conversationScrollId, anchor: .bottom)
                     }
                 }
             }
             .onChange(of: messages.count) { _ in
+                guard followNewest else { return }
                 withAnimation(.easeOut(duration: 0.18)) {
                     proxy.scrollTo(conversationScrollId, anchor: .bottom)
                 }
             }
             .onChange(of: partialReply.count) { _ in
+                guard followNewest else { return }
                 proxy.scrollTo(conversationScrollId, anchor: .bottom)
             }
         }
@@ -530,6 +580,7 @@ struct AERTEXConversationNativeView: View {
         input = ""
         inputFocused = false
         partialReply = ""
+        followNewest = true
         messages.append(AERTEXChatLine(role: "user", content: prompt))
         if currentId == nil { liveTitle = String(prompt.prefix(28)) }
         isSending = true
