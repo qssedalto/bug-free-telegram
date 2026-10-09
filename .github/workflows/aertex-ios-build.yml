@@ -154,7 +154,7 @@ jobs:
           import os, plistlib, re, shutil
           from pathlib import Path
           bundle_id = os.environ["SIGNING_BUNDLE_ID"].strip()
-          if not re.fullmatch(r"[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+", bundle_id):
+          if not re.fullmatch(r"[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+", bundle_id):
               raise SystemExit("Bundle ID must be a dotted identifier without the 10-character Team ID prefix")
           if bundle_id == "com.tglab.shifourentong.ios":
               print("Requested app ID already equals the default app ID")
