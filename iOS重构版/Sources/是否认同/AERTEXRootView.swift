@@ -232,7 +232,11 @@ struct AERTEXHomeView: View {
             }
             .background { LiquidGlassBackdrop() }
             .navigationTitle("AERTEX")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    AERTEXWordmarkView(height: 17)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         selection = .account
@@ -252,8 +256,7 @@ struct AERTEXHomeView: View {
                     .padding(10)
                     .liquidGlassSurface(cornerRadius: 18, tint: preferences.accentColor.opacity(0.13))
                 VStack(alignment: .leading, spacing: 4) {
-                    AERTEXBrandedText("AERTEX")
-                        .font(.system(.largeTitle, design: .rounded).weight(.heavy))
+                    AERTEXWordmarkView(height: 31)
                     Text("你的个人数字空间")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
@@ -309,7 +312,7 @@ struct AERTEXHomeView: View {
                             .font(.title2)
                             .foregroundStyle(preferences.accentControlColor)
                             .frame(height: 30)
-                        Text(service.title)
+                        AERTEXBrandedText(service.title)
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.primary)
                             .lineLimit(2)
