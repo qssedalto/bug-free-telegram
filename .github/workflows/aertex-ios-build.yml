@@ -43,26 +43,13 @@ jobs:
           brew install xcodegen
           xcodegen --version
 
-      - name: Prepare original AERTEX icon
+      - name: Generate original website brand artwork
         working-directory: iOS重构版
         run: |
           set -euo pipefail
-          test -s Build/AppIcons/AppIcon1024.png
-          mkdir -p CI/GeneratedAssets.xcassets/AppIcon.appiconset
-          cp Build/AppIcons/AppIcon1024.png CI/GeneratedAssets.xcassets/AppIcon.appiconset/AppIcon1024.png
-          cat > CI/GeneratedAssets.xcassets/AppIcon.appiconset/Contents.json <<'JSON'
-          {
-            "images": [
-              {
-                "filename": "AppIcon1024.png",
-                "idiom": "universal",
-                "platform": "ios",
-                "size": "1024x1024"
-              }
-            ],
-            "info": {"author": "xcode", "version": 1}
-          }
-          JSON
+          python3 -m venv "$RUNNER_TEMP/aertex-brand-venv"
+          "$RUNNER_TEMP/aertex-brand-venv/bin/python" -m pip install --disable-pip-version-check pillow
+          "$RUNNER_TEMP/aertex-brand-venv/bin/python" CI/render_brand_assets.py
 
       - name: Generate iOS application Xcode project
         working-directory: iOS重构版
