@@ -162,7 +162,7 @@ struct AERTEXStudioNativeView: View {
                 }
             }
         }
-        .navigationTitle("AERTEX Studio")
+        .navigationTitle("Studio")
         .aertexGlassBackButton()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -246,7 +246,7 @@ struct AERTEXWatchNativeView: View {
                         }
                     }
                     Section {
-                        Label("这里展示已同步至 AERTEX Watch 云端的电脑活动数据源，不会自动读取 iPhone 或 Apple Watch 健康数据。", systemImage: "lock.shield")
+                        Label { AERTEXBrandedText("这里展示已同步至 AERTEX Watch 云端的电脑活动数据源，不会自动读取 iPhone 或 Apple Watch 健康数据。") } icon: { Image(systemName: "lock.shield") }
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -259,7 +259,7 @@ struct AERTEXWatchNativeView: View {
                 }
             }
         }
-        .navigationTitle("AERTEX Watch")
+        .navigationTitle("Watch")
         .aertexGlassBackButton()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
