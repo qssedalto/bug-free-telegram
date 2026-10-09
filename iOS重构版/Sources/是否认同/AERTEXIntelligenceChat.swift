@@ -94,7 +94,7 @@ struct AERTEXIntelligenceNativeView: View {
                                             .foregroundStyle(.secondary)
                                     }
                                 }
-                                Text(conversation.model ?? "AERTEX Intelligence")
+                                AERTEXBrandedText(conversation.model ?? "AERTEX Intelligence")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -176,7 +176,7 @@ struct AERTEXIntelligenceNativeView: View {
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("删除后无法在 AERTEX Intelligence 中恢复。")
+            AERTEXBrandedText("删除后无法在 AERTEX Intelligence 中恢复。")
         }
         .alert("账户操作失败", isPresented: Binding(
             get: { error != nil && conversations != nil },
@@ -347,7 +347,7 @@ struct AERTEXConversationNativeView: View {
                                 .foregroundStyle(preferences.accentControlColor)
                             Text("有什么可以帮你？")
                                 .font(.title2.bold())
-                            Text("使用 AERTEX Intelligence 的真实模型与云端会话。支持数学公式、Markdown 与代码。")
+                            AERTEXBrandedText("使用 AERTEX Intelligence 的真实模型与云端会话。支持数学公式、Markdown 与代码。")
                                 .multilineTextAlignment(.center)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
@@ -444,7 +444,7 @@ struct AERTEXConversationNativeView: View {
             VStack(alignment: .leading, spacing: 11) {
                 HStack(spacing: 7) {
                     Image(systemName: mine ? "person.crop.circle.fill" : "sparkles")
-                    Text(mine ? "你" : "AERTEX Intelligence")
+                    AERTEXBrandedText(mine ? "你" : "AERTEX Intelligence")
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
