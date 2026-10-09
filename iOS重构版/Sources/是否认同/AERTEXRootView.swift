@@ -252,7 +252,7 @@ struct AERTEXHomeView: View {
                     .padding(10)
                     .liquidGlassSurface(cornerRadius: 18, tint: preferences.accentColor.opacity(0.13))
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("AERTEX")
+                    AERTEXBrandedText("AERTEX")
                         .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     Text("你的个人数字空间")
                         .font(.subheadline.weight(.medium))
@@ -266,7 +266,7 @@ struct AERTEXHomeView: View {
                     .font(.title2.weight(.bold))
                     .lineLimit(2)
                     .minimumScaleFactor(0.76)
-                Text("从一个地方访问你的 AERTEX 服务与应用。")
+                AERTEXBrandedText("从一个地方访问你的 AERTEX 服务与应用。")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -368,7 +368,7 @@ struct AERTEXHomeView: View {
     private var footer: some View {
         HStack(spacing: 6) {
             Image(systemName: "lock.shield")
-            Text("通过 AERTEX ID 连接")
+            AERTEXBrandedText("通过 AERTEX ID 连接")
             Spacer()
             Text("© TGLab")
         }
@@ -387,7 +387,7 @@ struct AERTEXServicesView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 7) {
-                        Text("连接 AERTEX")
+                        AERTEXBrandedText("连接 AERTEX")
                             .font(.title2.weight(.bold))
                         Text("Studio 工作台、Intelligence 原生 AI 对话和 Watch 同步状态均已接入原生 API；Work 暂时由 Safari 打开。")
                             .font(.subheadline)
