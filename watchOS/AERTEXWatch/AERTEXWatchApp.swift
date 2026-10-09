@@ -22,9 +22,16 @@ struct AERTEXWatchDashboard: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("AERTEX", systemImage: "applewatch")
-                        .font(.headline)
-                        .foregroundStyle(.tint)
+                    HStack(spacing: 8) {
+                        Image("AERTEXMark")
+                            .resizable()
+                            .renderingMode(.template)
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                            .accessibilityHidden(true)
+                        AERTEXWordmarkView(height: 16)
+                    }
+                    .foregroundStyle(.primary)
 
                     Label(
                         bridge.isReachable ? "iPhone 已连接" : "iPhone 暂不可连接",
@@ -106,7 +113,7 @@ struct AERTEXWatchDashboard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 6)
             }
-            .navigationTitle("AERTEX Watch")
+            .navigationTitle("Watch")
         }
     }
 }
