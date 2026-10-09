@@ -1,31 +1,46 @@
-# AERTEX watchOS companion — first development milestone
+# AERTEX Watch — watchOS 10+ companion (AERTEX 2.2)
 
-This is a **separate watchOS app prototype**. It is not included in the
-iPhone `iOS重构版/Package.swift` target and will not be installed by
-`xtool dev run` for the phone.
+The Apple Watch companion is now part of the **same Xcode project** as the
+native AERTEX iPhone app, while the Linux/xtool SwiftPM build remains available.
 
-## Architecture
+## Implemented
 
-- `AERTEXWatch/AERTEXWatchApp.swift`: watch-native SwiftUI status/dashboard
-  and `WCSession` message client.
-- iPhone is the trusted AERTEX ID authentication holder, and will provide a
-  vetted WatchConnectivity reply for `type = aertex.watch.status.v1`.
-- Watch should not receive, store or display Supabase access/refresh tokens,
-  provider API keys or ActivityWatch device-upload tokens.
-- The current watch screen safely presents 'waiting for iPhone' until an
-  authenticated and paired phone bridge is available. No fake data.
-- This first revision does **not** stream Intelligence chats or access HealthKit.
+- Native SwiftUI Watch UI, with a cloud ActivityWatch source count, last
+  computer name, last sync time, status refresh and clear error states.
+- WatchConnectivity `sendMessage` when the paired iPhone app is reachable.
+- Coalesced, sanitized `updateApplicationContext` snapshots for background
+  delivery when the Watch app next opens.
+- Watch shows cached-snapshot labeling instead of pretending old data is live.
+- The iPhone keeps **all** AERTEX ID tokens in its own secure store. No bearer
+  token, provider API key, or ActivityWatch upload token is transferred.
+- Signed-out state clears the Watch status sent by the iPhone.
+- Single-target watchOS `AERTEXWatch` app embedded in the iPhone app at
+  `AERTEX.app/PlugIns/AERTEXWatch.app`.
 
-## Remaining before shipping
+The Watch screen shows **computer ActivityWatch data synced to the AERTEX
+cloud**. It does not collect Apple Watch Activity rings, health, or workouts.
 
-1. Set up a watchOS App executable target and a companion bundle identifier
-   tied to the iPhone app; configure signing/provisioning for the actual Watch.
-2. Implement the authenticated iPhone `WCSessionDelegate` response and test
-   serialization/foreground + background reachability. Never copy bearer tokens.
-3. Build for watchOS SDK (not the iPhone SDK) and deploy to a physical Watch.
-4. Add accessibility, reduced-motion, wrist-size UI and explicit session errors.
-5. Consider a separate watch-native Intelligence compose/send path only after
-   rate-limit/authentication and microphone/dictation flows are validated.
+## Build
 
-The watchOS project remains isolated on the iOS development PR until these
-steps succeed.
+`iOS重构版/project.yml` contains both `AERTEX` (iOS) and `AERTEXWatch`
+(watchOS) targets. The GitHub Actions workflow
+`.github/workflows/aertex-ios-build.yml` uses a standard `macos-26` runner
+with Xcode 26.6, builds both targets against their own Apple SDKs, checks that
+the Watch app is embedded in the iPhone product, and publishes an **unsigned**
+`AERTEX-unsigned.ipa`.
+
+Combined cloud build verified on 2026-10-09:
+https://github.com/qssedalto/bug-free-telegram/actions/runs/37946720598
+
+## Real device testing is still required
+
+- Sign the iOS app **and the nested watchOS app**, using matching identifiers
+  and suitable Apple provisioning profiles/entitlements.
+- Install the properly signed iOS companion on an iPhone paired with an
+  eligible Apple Watch. The unsigned IPA cannot be installed directly.
+- Open AERTEX on the iPhone, sign in, then open AERTEX Watch and refresh.
+- Test foreground/background connectivity, sign-out clearing, accessibility,
+  small Watch displays, and actual installation before calling this a release.
+
+This is **not** a standalone Watch app: the current data path intentionally
+relies on the signed-in iPhone.
