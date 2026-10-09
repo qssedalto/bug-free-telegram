@@ -27,10 +27,7 @@ struct AERTEXLoginView: View {
                     BrandIconView(size: 82)
 
                     VStack(spacing: 8) {
-                        AERTEXBrandedText("AERTEX")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .tracking(2.2)
-                            .foregroundStyle(.secondary)
+                        AERTEXWordmarkView(height: 23)
                         AERTEXBrandedText("登录你的 AERTEX")
                             .font(.system(size: 28, weight: .black, design: .rounded))
                             .multilineTextAlignment(.center)
@@ -41,7 +38,7 @@ struct AERTEXLoginView: View {
                     }
 
                     VStack(spacing: 14) {
-                        TextField("AERTEX 邮箱", text: $email)
+                        TextField("", text: $email, prompt: AERTEXBrandedText("AERTEX 邮箱"))
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .keyboardType(.emailAddress)
