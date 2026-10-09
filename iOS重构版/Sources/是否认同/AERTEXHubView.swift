@@ -28,11 +28,11 @@ struct AERTEXHubView: View {
                         appearanceCard
                         actionsCard
                         Button(role: .destructive) { confirmSignOut = true } label: {
-                            Label("退出 AERTEX ID", systemImage: "rectangle.portrait.and.arrow.right")
+                            Label { AERTEXBrandedText("退出 AERTEX ID") } icon: { Image(systemName: "rectangle.portrait.and.arrow.right") }
                                 .frame(maxWidth: .infinity, minHeight: 48)
                         }
                         .liquidGlassButtonStyle()
-                        Text("AERTEX 是主应用；「是否认同」是内置附属模块。账户信息及强调色来自 AERTEX，剧情与历史数据仍保留在设备上。")
+                        AERTEXBrandedText("AERTEX 是主应用；「是否认同」是内置附属模块。账户信息及强调色来自 AERTEX，剧情与历史数据仍保留在设备上。")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 8)
@@ -90,7 +90,7 @@ struct AERTEXHubView: View {
                 auth.errorMessage = nil
                 showEditName = true
             } label: {
-                Label("修改 AERTEX 显示名称", systemImage: "square.and.pencil")
+                Label { AERTEXBrandedText("修改 AERTEX 显示名称") } icon: { Image(systemName: "square.and.pencil") }
                     .font(.subheadline.weight(.semibold))
             }
             .buttonStyle(.plain)
@@ -122,7 +122,7 @@ struct AERTEXHubView: View {
                         .textContentType(.nickname)
                         .autocorrectionDisabled()
                         .submitLabel(.done)
-                    Text("修改后会立即同步到 AERTEX 账户。用户名、邮箱及权限不会改变。")
+                    AERTEXBrandedText("修改后会立即同步到 AERTEX 账户。用户名、邮箱及权限不会改变。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -238,7 +238,7 @@ struct AERTEXHubView: View {
                 Image(systemName: "checkmark.seal.fill")
                     .foregroundStyle(preferences.accentControlColor)
             }
-            Text("强调色跟随 AERTEX 主站；深浅模式跟随 iOS 系统。颜色请到主站调整，再返回 App 同步。")
+            AERTEXBrandedText("强调色跟随 AERTEX 主站；深浅模式跟随 iOS 系统。颜色请到主站调整，再返回 App 同步。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -248,7 +248,7 @@ struct AERTEXHubView: View {
 
     private var actionsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("AERTEX 服务", systemImage: "square.grid.2x2.fill")
+            Label { AERTEXBrandedText("AERTEX 服务") } icon: { Image(systemName: "square.grid.2x2.fill") }
                 .font(.headline)
                 .foregroundStyle(preferences.accentControlColor)
             serviceLink("AERTEX 主站", subtitle: "访问工作台与服务", icon: "square.grid.2x2", url: "https://qsseda.com")
