@@ -1,0 +1,42 @@
+# Generate AERTEX.xcodeproj from the existing SwiftUI sources.
+# Keep Package.swift unchanged for Linux/xtool.
+name: AERTEX
+options:
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "16.0"
+configs:
+  Debug: debug
+  Release: release
+targets:
+  AERTEX:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Sources/是否认同
+        excludes:
+          - "Resources/**"
+      - path: Sources/是否认同/Resources
+        type: folder
+      - path: CI/BundleModuleForXcode.swift
+      - path: CI/GeneratedAssets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tglab.shifourentong.ios
+        PRODUCT_NAME: AERTEX
+        INFOPLIST_FILE: Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SUPPORTS_MACCATALYST: "NO"
+schemes:
+  AERTEX:
+    build:
+      targets:
+        AERTEX: all
+    run:
+      config: Debug
+    archive:
+      config: Release
