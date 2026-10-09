@@ -1,0 +1,116 @@
+name: AERTEX iOS Build (macOS/Xcode)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "iOS重构版/**"
+      - ".github/workflows/aertex-ios-build.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aertex-ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show Apple toolchain
+        run: |
+          set -euo pipefail
+          sw_vers
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install XcodeGen
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          xcodegen --version
+
+      - name: Prepare original AERTEX icon
+        working-directory: iOS重构版
+        run: |
+          set -euo pipefail
+          test -s Build/AppIcons/AppIcon1024.png
+          mkdir -p CI/GeneratedAssets.xcassets/AppIcon.appiconset
+          cp Build/AppIcons/AppIcon1024.png CI/GeneratedAssets.xcassets/AppIcon.appiconset/AppIcon1024.png
+          cat > CI/GeneratedAssets.xcassets/AppIcon.appiconset/Contents.json <<'JSON'
+          {
+            "images": [
+              {
+                "filename": "AppIcon1024.png",
+                "idiom": "universal",
+                "platform": "ios",
+                "size": "1024x1024"
+              }
+            ],
+            "info": {"author": "xcode", "version": 1}
+          }
+          JSON
+
+      - name: Generate iOS application Xcode project
+        working-directory: iOS重构版
+        run: |
+          set -euo pipefail
+          xcodegen generate --spec project.yml
+          xcodebuild -list -project AERTEX.xcodeproj
+
+      - name: Compile unsigned iPhone application
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project "iOS重构版/AERTEX.xcodeproj" \
+            -scheme AERTEX \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$RUNNER_TEMP/aertex-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build > "$RUNNER_TEMP/aertex-xcodebuild.log" 2>&1 || {
+              tail -n 180 "$RUNNER_TEMP/aertex-xcodebuild.log"
+              exit 1
+            }
+          tail -n 35 "$RUNNER_TEMP/aertex-xcodebuild.log"
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/aertex-derived/Build/Products/Release-iphoneos/AERTEX.app"
+          test -d "$app"
+          test -s "$app/AERTEX"
+          mkdir -p dist/Payload
+          ditto "$app" "dist/Payload/AERTEX.app"
+          ( cd dist && zip -qry AERTEX-unsigned.ipa Payload )
+          test -s dist/AERTEX-unsigned.ipa
+          /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$app/Info.plist"
+          ls -lh dist/AERTEX-unsigned.ipa
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AERTEX-Xcode-build-log
+          path: ${{ runner.temp }}/aertex-xcodebuild.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AERTEX-unsigned-iOS-app
+          path: dist/AERTEX-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
