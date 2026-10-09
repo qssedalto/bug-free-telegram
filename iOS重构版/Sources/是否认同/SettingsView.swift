@@ -16,7 +16,7 @@ struct SettingsView: View {
                             .frame(width: 60, height: 60)
                         VStack(alignment: .leading, spacing: 5) {
                             Text("是否认同").font(.title2.weight(.bold))
-                            Text("AERTEX · 附属功能")
+                            AERTEXBrandedText("AERTEX · 附属功能")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Text("剧情与历史记录仅保存在本机")
@@ -76,6 +76,6 @@ struct SettingsView: View {
         .alert("恢复默认设置？", isPresented: $confirmDefaults) {
             Button("取消", role: .cancel) {}
             Button("恢复", role: .destructive) { preferences.restoreDefaults() }
-        } message: { Text("这会恢复「是否认同」的标题、问题和金额参数；剧情历史不会被删除。不会修改 AERTEX 账户及主站主题色。") }
+        } message: { AERTEXBrandedText("这会恢复「是否认同」的标题、问题和金额参数；剧情历史不会被删除。不会修改 AERTEX 账户及主站主题色。") }
     }
 }
