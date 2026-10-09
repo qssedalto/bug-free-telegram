@@ -253,6 +253,7 @@ struct AERTEXConversationNativeView: View {
     @FocusState private var inputFocused: Bool
     // Do not unexpectedly jump to the bottom when the user scrolls upward.
     @State private var followNewest = true
+    @State private var scrollRequest = 0
 
     private let initialId: String?
     private let title: String
@@ -313,6 +314,7 @@ struct AERTEXConversationNativeView: View {
                 if !followNewest && !messages.isEmpty {
                     Button {
                         followNewest = true
+                        scrollRequest += 1
                     } label: {
                         Image(systemName: "arrow.down.to.line")
                     }
@@ -413,6 +415,11 @@ struct AERTEXConversationNativeView: View {
                         guard !Task.isCancelled, followNewest else { return }
                         proxy.scrollTo(conversationScrollId, anchor: .bottom)
                     }
+                }
+            }
+            .onChange(of: scrollRequest) { _ in
+                withAnimation(.easeOut(duration: 0.18)) {
+                    proxy.scrollTo(conversationScrollId, anchor: .bottom)
                 }
             }
             .onChange(of: messages.count) { _ in
