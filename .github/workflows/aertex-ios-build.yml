@@ -2,6 +2,12 @@ name: AERTEX iOS Build (macOS/Xcode)
 
 on:
   workflow_dispatch:
+    inputs:
+      signing_bundle_id:
+        description: "Optional iPhone Bundle ID matching your signing profile (diagnostic only)"
+        required: false
+        type: string
+        default: ""
   push:
     branches:
       - main
@@ -138,6 +144,44 @@ jobs:
           ( cd "$RUNNER_TEMP/aertex-phone-only" && zip -qry "$GITHUB_WORKSPACE/dist/AERTEX-iphone-only-unsigned.ipa" Payload )
           test -s dist/AERTEX-iphone-only-unsigned.ipa
 
+      - name: Prepare iPhone-only IPA matching optional provisioning Bundle ID
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.signing_bundle_id != '' }}
+        env:
+          SIGNING_BUNDLE_ID: ${{ inputs.signing_bundle_id }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, plistlib, re, shutil
+          from pathlib import Path
+          bundle_id = os.environ["SIGNING_BUNDLE_ID"].strip()
+          if not re.fullmatch(r"[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+", bundle_id):
+              raise SystemExit("Bundle ID must be a dotted identifier without the 10-character Team ID prefix")
+          if bundle_id == "com.tglab.shifourentong.ios":
+              print("Requested app ID already equals the default app ID")
+          tmp = Path(os.environ["RUNNER_TEMP"])
+          src = tmp / "aertex-derived/Build/Products/Release-iphoneos/AERTEX.app"
+          target = tmp / "aertex-profile-matched/Payload/AERTEX.app"
+          target.parent.mkdir(parents=True, exist_ok=True)
+          shutil.copytree(src, target, dirs_exist_ok=True, symlinks=True)
+          # The diagnostic package intentionally contains no Watch target.
+          # An unsigned Info.plist may safely be changed BEFORE signing.
+          shutil.rmtree(target / "PlugIns" / "AERTEXWatch.app", ignore_errors=True)
+          shutil.rmtree(target / "_CodeSignature", ignore_errors=True)
+          (target / "embedded.mobileprovision").unlink(missing_ok=True)
+          info_path = target / "Info.plist"
+          with info_path.open("rb") as handle:
+              info = plistlib.load(handle)
+          info["CFBundleIdentifier"] = bundle_id
+          with info_path.open("wb") as handle:
+              plistlib.dump(info, handle)
+          with info_path.open("rb") as handle:
+              assert plistlib.load(handle)["CFBundleIdentifier"] == bundle_id
+          print("Profile-matched iPhone-only unsigned IPA prepared, bundle ID:", bundle_id)
+          PY
+          ( cd "$RUNNER_TEMP/aertex-profile-matched" &&
+            zip -qry "$GITHUB_WORKSPACE/dist/AERTEX-iphone-profile-match-unsigned.ipa" Payload )
+          test -s dist/AERTEX-iphone-profile-match-unsigned.ipa
+
       - name: Prepare and verify locally sealed IPA for third-party re-signing
         # Experimental source signature, not an installable Apple profile.
         continue-on-error: true
@@ -166,6 +210,15 @@ jobs:
             ${{ runner.temp }}/aertex-xcodebuild.log
             ${{ runner.temp }}/aertex-watch-build.log
           if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload optional profile-matched iPhone IPA
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.signing_bundle_id != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: AERTEX-iphone-profile-match-test
+          path: dist/AERTEX-iphone-profile-match-unsigned.ipa
+          if-no-files-found: error
           retention-days: 7
 
       - name: Upload iPhone-only signing diagnostic IPA
