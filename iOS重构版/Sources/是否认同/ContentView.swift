@@ -236,7 +236,7 @@ struct BrandIconView: View {
 
     var body: some View {
         Group {
-            if let path = Bundle.module.path(forResource: "BrandIcon", ofType: "png", inDirectory: "Resources"),
+            if let path = Bundle.module.path(forResource: "AERTEXMark", ofType: "png", inDirectory: "Resources"),
                let image = UIImage(contentsOfFile: path) {
                 Image(uiImage: image)
                     .renderingMode(.template)
@@ -244,7 +244,7 @@ struct BrandIconView: View {
                     .scaledToFit()
                     .foregroundStyle(.primary)
             } else {
-                Image(systemName: "a.circle.fill")
+                Image(systemName: "a.circle")
                     .resizable()
                     .scaledToFit()
                     .foregroundStyle(.primary)
