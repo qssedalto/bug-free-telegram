@@ -21,6 +21,9 @@ targets:
         type: folder
       - path: CI/BundleModuleForXcode.swift
       - path: CI/GeneratedAssets.xcassets
+    dependencies:
+      - target: AERTEXWatch
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tglab.shifourentong.ios
@@ -40,3 +43,35 @@ schemes:
       config: Debug
     archive:
       config: Release
+
+  AERTEXWatch:
+    type: application
+    platform: watchOS
+    deploymentTarget: "10.0"
+    sources:
+      - path: ../watchOS/AERTEXWatch/AERTEXWatchApp.swift
+    info:
+      path: ../watchOS/AERTEXWatch/GeneratedInfo.plist
+      properties:
+        CFBundleDisplayName: AERTEX
+        CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
+        CFBundleExecutable: "$(EXECUTABLE_NAME)"
+        CFBundlePackageType: APPL
+        CFBundleShortVersionString: "2.2.0"
+        CFBundleVersion: "220"
+        WKWatchKitApp: true
+        WKCompanionAppBundleIdentifier: com.tglab.shifourentong.ios
+        WKRunsIndependentlyOfCompanionApp: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tglab.shifourentong.ios.watchkitapp
+        PRODUCT_NAME: AERTEXWatch
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: "NO"
+  AERTEXWatch:
+    build:
+      targets:
+        AERTEXWatch: all
+    run:
+      config: Debug
