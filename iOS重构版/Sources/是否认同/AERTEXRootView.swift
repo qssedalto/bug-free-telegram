@@ -296,7 +296,7 @@ struct AERTEXHomeView: View {
             Text(title)
                 .font(.title3.weight(.bold))
             Spacer()
-            Text(detail)
+            AERTEXBrandedText(detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
