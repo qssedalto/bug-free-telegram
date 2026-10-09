@@ -27,14 +27,14 @@ struct AERTEXLoginView: View {
                     BrandIconView(size: 82)
 
                     VStack(spacing: 8) {
-                        Text("AERTEX")
+                        AERTEXBrandedText("AERTEX")
                             .font(.system(size: 13, weight: .bold, design: .rounded))
                             .tracking(2.2)
                             .foregroundStyle(.secondary)
-                        Text("登录你的 AERTEX")
+                        AERTEXBrandedText("登录你的 AERTEX")
                             .font(.system(size: 28, weight: .black, design: .rounded))
                             .multilineTextAlignment(.center)
-                        Text("连接你的个人数字空间。登录后可使用 AERTEX 服务和「是否认同」等内置功能。密码仅用于本次 HTTPS 验证。")
+                        AERTEXBrandedText("连接你的个人数字空间。登录后可使用 AERTEX 服务和「是否认同」等内置功能。密码仅用于本次 HTTPS 验证。")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
