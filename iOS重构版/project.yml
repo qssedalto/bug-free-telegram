@@ -49,7 +49,7 @@ targets:
         CFBundlePackageType: APPL
         CFBundleShortVersionString: "2.2.0"
         CFBundleVersion: "220"
-        WKWatchKitApp: true
+        WKApplication: true
         WKCompanionAppBundleIdentifier: com.tglab.shifourentong.ios
         WKRunsIndependentlyOfCompanionApp: false
     settings:
