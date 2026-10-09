@@ -46,7 +46,7 @@ struct ContentView: View {
                         Button {
                             dismiss()
                         } label: {
-                            Label("返回 AERTEX", systemImage: "chevron.left")
+                            Label { AERTEXBrandedText("返回 AERTEX") } icon: { Image(systemName: "chevron.left") }
                         }
                     }
                 }
