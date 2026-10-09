@@ -107,7 +107,8 @@ def main() -> None:
         (icon_dir / "Contents.json").write_text(json.dumps({
             "images": [{
                 "filename": "AppIcon1024.png",
-                "idiom": "universal", "platform": "ios",
+                "idiom": "universal",
+                "platform": "watchos" if folder == WATCH_ASSETS else "ios",
                 "size": "1024x1024"
             }],
             "info": {"author": "xcode", "version": 1}
