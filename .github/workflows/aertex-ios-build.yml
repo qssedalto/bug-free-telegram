@@ -2,6 +2,12 @@ name: AERTEX iOS Build (macOS/Xcode)
 
 on:
   workflow_dispatch:
+    inputs:
+      signing_bundle_id:
+        description: "Optional Bundle ID for iPhone-only signing diagnostic on feature branch"
+        required: false
+        type: string
+        default: ""
   push:
     branches: [main]
     paths:
