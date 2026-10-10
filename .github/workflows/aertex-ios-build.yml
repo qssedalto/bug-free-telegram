@@ -8,6 +8,12 @@ on:
         required: false
         type: string
         default: ""
+  pull_request:
+    branches: [main]
+    paths:
+      - "iOS重构版/**"
+      - "watchOS/**"
+      - ".github/workflows/aertex-ios-build.yml"
   push:
     branches:
       - main
@@ -57,6 +63,26 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/aertex-brand-venv"
           "$RUNNER_TEMP/aertex-brand-venv/bin/python" -m pip install --disable-pip-version-check pillow
           "$RUNNER_TEMP/aertex-brand-venv/bin/python" CI/render_brand_assets.py
+
+      - name: Confirm xtool icon matches Xcode and watchOS artwork
+        working-directory: iOS重构版
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/aertex-brand-venv/bin/python" - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageChops
+          root = Path.cwd()
+          icon_path = Path("CI/GeneratedAssets.xcassets/AppIcon.appiconset/AppIcon1024.png")
+          assert "iconPath: " + icon_path.as_posix() in (root / "xtool.yml").read_text(encoding="utf-8")
+          phone = root / icon_path
+          watch = root.parent / "watchOS/AERTEXWatch/GeneratedAssets.xcassets/AppIcon.appiconset/AppIcon1024.png"
+          old_icon = root / "Build/AppIcons/AppIcon1024.png"
+          with Image.open(phone) as p, Image.open(watch) as w, Image.open(old_icon) as old:
+              assert p.size == w.size == (1024, 1024) and p.mode == "RGB"
+              assert not ImageChops.difference(p.convert("RGB"), w.convert("RGB")).getbbox()
+              assert ImageChops.difference(p.convert("RGB"), old.convert("RGB")).getbbox()
+          print("Verified matching AERTEX iPhone, iPad, Watch and xtool icons")
+          PY
 
       - name: Generate iOS application Xcode project
         working-directory: iOS重构版
