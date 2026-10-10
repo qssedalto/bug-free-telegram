@@ -39,8 +39,8 @@ jobs:
 
           root = pathlib.Path("iOS重构版")
           manifest = (root / "xtool.yml").read_text(encoding="utf-8")
-          assert re.search(r"^infoPath:\\s*xtool-Info\\.plist\\s*$", manifest, re.M), "xtool must use its own Info.plist"
-          assert re.search(r"^bundleID:\\s*com\\.tglab\\.shifourentong\\.ios\\s*$", manifest, re.M), "unexpected xtool bundle ID"
+          assert re.search(r"^infoPath:\s*xtool-Info\.plist\s*$", manifest, re.M), "xtool must use its own Info.plist"
+          assert re.search(r"^bundleID:\s*com\.tglab\.shifourentong\.ios\s*$", manifest, re.M), "unexpected xtool bundle ID"
           with (root / "xtool-Info.plist").open("rb") as stream:
               metadata = plistlib.load(stream)
           for key in ("CFBundleIdentifier", "CFBundleExecutable", "CFBundleName"):
