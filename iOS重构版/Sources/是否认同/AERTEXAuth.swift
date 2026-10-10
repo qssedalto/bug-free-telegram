@@ -221,6 +221,49 @@ final class AERTEXAuthStore: ObservableObject {
         }
     }
 
+    /// Persist a palette ID to AERTEX ID; the server alone validates and saves
+    /// the color. Never treat a local preview as successful remote persistence.
+    func updateAccent(_ id: String) async -> Bool {
+        guard !isUpdatingProfile, AERTEXAccent.byID[id] != nil else { return false }
+        isUpdatingProfile = true
+        errorMessage = nil
+        defer { isUpdatingProfile = false }
+        do {
+            if accessToken == nil {
+                guard await refreshAccount() else {
+                    errorMessage = "登录会话已经失效。"
+                    return false
+                }
+            }
+            let updated: AERTEXSessionResponse
+            do {
+                updated = try await request(
+                    path: "/api/app/profile", method: "PATCH",
+                    jsonBody: ["accentId": id], bearer: accessToken
+                )
+            } catch {
+                guard (error as? AERTEXAuthError)?.statusCode == 401,
+                      await refreshAccount() else { throw error }
+                updated = try await request(
+                    path: "/api/app/profile", method: "PATCH",
+                    jsonBody: ["accentId": id], bearer: accessToken
+                )
+            }
+            guard updated.authenticated, updated.authorized,
+                  let selected = updated.user,
+                  selected.status == "active", selected.accentId == id else {
+                errorMessage = "服务器尚未确认主题颜色，已保持原配色。"
+                return false
+            }
+            user = selected
+            lastSyncedAt = Date()
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
     func logout() async {
         let token = accessToken
         clearLocalSession()
@@ -312,6 +355,59 @@ final class AERTEXAuthStore: ObservableObject {
         }
     }
 
+
+    /// Authenticated native mutations for the small first-party Work and Cash
+    /// APIs. JSON is Codable; auth headers never enter persisted view state.
+    func nativeWrite<Response: Decodable, Payload: Encodable>(
+        _ type: Response.Type, product: AERTEXNativeProduct,
+        path: String, method: String, payload: Payload, etag: String? = nil
+    ) async throws -> Response {
+        guard ["POST", "PUT"].contains(method), isAuthenticated else {
+            throw AERTEXNativeError(message: "无效的请求或登录状态。")
+        }
+        do {
+            return try await nativeWriteWithToken(
+                type, product: product, path: path, method: method,
+                payload: payload, etag: etag
+            )
+        } catch let error as AERTEXNativeError where error.statusCode == 401 {
+            guard await refreshAccount() else { throw error }
+            return try await nativeWriteWithToken(
+                type, product: product, path: path, method: method,
+                payload: payload, etag: etag
+            )
+        }
+    }
+
+    private func nativeWriteWithToken<Response: Decodable, Payload: Encodable>(
+        _ type: Response.Type, product: AERTEXNativeProduct,
+        path: String, method: String, payload: Payload, etag: String?
+    ) async throws -> Response {
+        guard let accessToken, path.hasPrefix("/api/native/"),
+              !path.contains(".."), let url = URL(string: product.baseAddress + path) else {
+            throw AERTEXNativeError(message: "请求地址无效。")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.timeoutInterval = 35
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        if let etag { request.setValue(etag, forHTTPHeaderField: "If-Match") }
+        request.httpBody = try JSONEncoder().encode(payload)
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AERTEXNativeError(message: "服务没有返回有效响应。")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let detail = try? JSONDecoder().decode(AERTEXErrorResponse.self, from: data)
+            throw AERTEXNativeError(
+                message: detail?.error ?? "操作失败（HTTP \(http.statusCode)）。",
+                statusCode: http.statusCode
+            )
+        }
+        return try JSONDecoder().decode(type, from: data)
+    }
 
     /// Account-owned native AI conversation management. Only safe title and
     /// deletion operations are exposed in iOS; all ownership is server checked.
@@ -666,12 +762,16 @@ enum AERTEXNativeProduct {
     case studio
     case intelligence
     case watch
+    case work
+    case cash
 
     var baseAddress: String {
         switch self {
         case .studio: return "https://qsseda.com"
         case .intelligence: return "https://gpt.qsseda.com"
         case .watch: return "https://aw.qsseda.com"
+        case .work: return "https://qsseda.com"
+        case .cash: return "https://cash.qsseda.com"
         }
     }
 }
