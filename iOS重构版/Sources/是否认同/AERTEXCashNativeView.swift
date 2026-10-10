@@ -102,13 +102,13 @@ struct AERTEXCashNativeView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(tx.category).font(.headline)
-                            Text(tx.note?.isEmpty == false ? tx.note! : tx.date)
+                            Text((tx.note?.isEmpty == false ? tx.note : nil) ?? tx.date)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
                         Text("\(tx.type == "income" ? "+" : "-")\(tx.amount.formatted(currency))")
-                            .foregroundStyle(tx.type == "income" ? .green : .primary)
+                            .foregroundColor(tx.type == "income" ? .green : .primary)
                             .monospacedDigit()
                     }
                 }
@@ -197,8 +197,8 @@ struct AERTEXCashEntryView: View {
                 TextField("金额（人民币）", text: $amount)
                     .keyboardType(.decimalPad)
                 Picker("分类", selection: $category) {
-                    ForEach(categories, id: \.0) { value in
-                        Text(value.1).tag(value.0)
+                    ForEach(categories.indices, id: \.self) { index in
+                        Text(categories[index].1).tag(categories[index].0)
                     }
                 }
                 TextField("备注（选填）", text: $note, axis: .vertical)
@@ -234,7 +234,7 @@ struct AERTEXCashEntryView: View {
         let cleaned = amount.replacingOccurrences(of: ",", with: ".")
         guard let amountValue = Double(cleaned), amountValue > 0,
               amountValue <= 1_000_000_000,
-              (amountValue * 100).rounded() == amountValue * 100 else {
+              abs((amountValue * 100).rounded() - amountValue * 100) < 0.000001 else {
             error = "请输入不超过 10 亿元、最多两位小数的有效金额。"
             return
         }
