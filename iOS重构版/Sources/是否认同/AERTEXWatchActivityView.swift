@@ -30,6 +30,7 @@ struct AERTEXWatchBucketView: View {
     let bucketName: String
 
     @State private var events: [AERTEXWatchBucketEvent] = []
+    @State private var rangeHours = 24
     @State private var loading = false
     @State private var loaded = false
     @State private var error: String?
@@ -38,9 +39,9 @@ struct AERTEXWatchBucketView: View {
 
     private var lastDay: [AERTEXWatchHour] {
         let end = Date()
-        let start = end.addingTimeInterval(-86400)
+        let start = end.addingTimeInterval(-Double(rangeHours) * 3600)
         let firstHour = calendar.dateInterval(of: .hour, for: start)?.start ?? start
-        let hours: [Date] = (0..<25).compactMap {
+        let hours: [Date] = (0...rangeHours).compactMap {
             calendar.date(byAdding: .hour, value: $0, to: firstHour)
         }
         var seconds: [Date: Double] = [:]
@@ -62,6 +63,19 @@ struct AERTEXWatchBucketView: View {
         return hours.map { AERTEXWatchHour(date: $0, seconds: seconds[$0] ?? 0) }
     }
 
+    private var topApps: [(name: String, minutes: Double)] {
+        var amounts: [String: Double] = [:]
+        for event in events where event.duration > 0 {
+            let app = event.data?.app?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if app.isEmpty { continue }
+            amounts[app, default: 0] += min(event.duration, 604800)
+        }
+        return amounts.map { (name: $0.key, minutes: $0.value / 60) }
+            .sorted { $0.minutes > $1.minutes }
+            .prefix(8)
+            .map { $0 }
+    }
+
     var body: some View {
         List {
             Section {
@@ -71,10 +85,17 @@ struct AERTEXWatchBucketView: View {
                         .textSelection(.enabled)
                 }
             }
+            Section {
+                Picker("统计窗口", selection: $rangeHours) {
+                    Text("24 小时").tag(24)
+                    Text("7 天").tag(168)
+                }
+                .pickerStyle(.segmented)
+            }
             if loading && !loaded {
                 Section { ProgressView("正在读取最近 24 小时的 ActivityWatch 事件…") }
             } else if loaded {
-                Section("最近 24 小时 · 原始事件时长") {
+                Section("最近 \(rangeHours == 24 ? "24 小时" : "7 天") · 原始事件时长") {
                     Chart(lastDay) { value in
                         BarMark(
                             x: .value("时间", value.date),
@@ -86,6 +107,24 @@ struct AERTEXWatchBucketView: View {
                     .chartYScale(domain: .automatic(includesZero: true))
                     Text("此图展示单一数据源的事件时长，尚未进行网站使用的 AFK/多设备去重和专注算法；多个来源不能直接相加。")
                         .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("应用时长排行 · 原始事件") {
+                    if topApps.isEmpty {
+                        Text("没有可聚合的应用信息。").foregroundStyle(.secondary)
+                    }
+                    ForEach(topApps, id: \.name) { item in
+                        HStack {
+                            Text(item.name).lineLimit(1)
+                            Spacer()
+                            Text(String(format: "%.1f 分钟", item.minutes))
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Text("只对当前数据源返回的事件求和。重叠事件、AFK 状态和超过 800 条的分页尚未完成去重，因此不作为实际专注时间。")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
@@ -127,6 +166,7 @@ struct AERTEXWatchBucketView: View {
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await load() }
         .task { await load() }
+        .onChange(of: rangeHours) { _ in Task { await load() } }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { Task { await load() } } label: {
@@ -148,7 +188,7 @@ struct AERTEXWatchBucketView: View {
         }
         let now = Date()
         let iso = ISO8601DateFormatter()
-        let start = iso.string(from: now.addingTimeInterval(-86400))
+        let start = iso.string(from: now.addingTimeInterval(-Double(rangeHours) * 3600))
         let end = iso.string(from: now)
         let path = "/api/native/watch/buckets/" + encodedId + "/events?start=" + start + "&end=" + end + "&limit=800"
         do {
