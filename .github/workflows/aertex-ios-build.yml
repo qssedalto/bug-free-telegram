@@ -113,6 +113,27 @@ jobs:
             }
           tail -n 35 "$RUNNER_TEMP/aertex-xcodebuild.log"
 
+      - name: Verify iPad-compatible iOS Simulator build
+        run: |
+          set -euo pipefail
+          # Both iPhone and iPad use the same application and bundle ID.
+          # An iPad's split workspace must compile for the simulator SDK,
+          # in addition to the physical-device build above.
+          xcodebuild \
+            -project "iOS重构版/AERTEX.xcodeproj" \
+            -scheme AERTEX \
+            -configuration Release \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/aertex-ipad-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build > "$RUNNER_TEMP/aertex-ipad-build.log" 2>&1 || {
+              tail -n 180 "$RUNNER_TEMP/aertex-ipad-build.log"
+              exit 1
+            }
+          test -s "$RUNNER_TEMP/aertex-ipad-derived/Build/Products/Release-iphonesimulator/AERTEX.app/AERTEX"
+          tail -n 18 "$RUNNER_TEMP/aertex-ipad-build.log"
+
       - name: Package unsigned IPA
         run: |
           set -euo pipefail
@@ -236,6 +257,7 @@ jobs:
           path: |
             ${{ runner.temp }}/aertex-xcodebuild.log
             ${{ runner.temp }}/aertex-watch-build.log
+            ${{ runner.temp }}/aertex-ipad-build.log
           if-no-files-found: ignore
           retention-days: 7
 
