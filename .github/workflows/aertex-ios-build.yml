@@ -192,15 +192,19 @@ jobs:
           app="$RUNNER_TEMP/aertex-adhoc/Payload/AERTEX.app"
           mkdir -p "$RUNNER_TEMP/aertex-adhoc/Payload"
           ditto "$src" "$app"
-          # Sign nested watch bundle first, iOS containing bundle last.
-          # Never modify any Info.plist or Mach-O executable afterwards.
-          codesign --force --sign - --timestamp=none --generate-entitlement-der "$app/PlugIns/AERTEXWatch.app"
-          codesign --force --sign - --timestamp=none --generate-entitlement-der "$app"
-          # Verify each iOS/watchOS code bundle explicitly. The macOS --deep
-          # traversal can misclassify the iOS Assets.car resource as nested code;
-          # the normal strict check still verifies the bundle resource seal.
-          codesign --verify --strict --verbose=2 "$app/PlugIns/AERTEXWatch.app"
-          codesign --verify --strict --verbose=2 "$app"
+          # Diagnose bundle structure and permissions before signing.
+          echo "### SIGNING DIAGNOSTICS: start"
+          ls -la "$app" "$app/PlugIns/AERTEXWatch.app"
+          file "$app/AERTEX" "$app/Assets.car" "$app/PlugIns/AERTEXWatch.app/AERTEXWatch" "$app/PlugIns/AERTEXWatch.app/Assets.car"
+          stat -f '%N mode=%Sp flags=%Sf' "$app/AERTEX" "$app/Assets.car" "$app/PlugIns/AERTEXWatch.app/AERTEXWatch" "$app/PlugIns/AERTEXWatch.app/Assets.car"
+          echo "### SIGNING: watch"
+          codesign --force --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$app/PlugIns/AERTEXWatch.app"
+          echo "### VERIFY: watch"
+          codesign --verify --strict --verbose=4 "$app/PlugIns/AERTEXWatch.app"
+          echo "### SIGNING: iPhone"
+          codesign --force --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$app"
+          echo "### VERIFY: iPhone"
+          codesign --verify --strict --verbose=4 "$app"
           codesign -dv --verbose=4 "$app/PlugIns/AERTEXWatch.app" 2>&1 | grep -E 'Identifier=|CodeDirectory|Signature='
           codesign -dv --verbose=4 "$app" 2>&1 | grep -E 'Identifier=|CodeDirectory|Signature='
           ( cd "$RUNNER_TEMP/aertex-adhoc" && zip -qry "$GITHUB_WORKSPACE/dist/AERTEX-watch-adhoc-verified.ipa" Payload )
@@ -228,14 +232,16 @@ jobs:
           retention-days: 7
 
       - name: Upload iPhone-only signing diagnostic IPA
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AERTEX-iphone-only-signing-test
           path: dist/AERTEX-iphone-only-unsigned.ipa
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Upload verified ad-hoc signing source
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AERTEX-watch-adhoc-signing-test
@@ -244,9 +250,10 @@ jobs:
           retention-days: 14
 
       - name: Upload unsigned IPA
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AERTEX-unsigned-iOS-app
           path: dist/AERTEX-unsigned.ipa
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
