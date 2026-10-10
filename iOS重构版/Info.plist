@@ -22,6 +22,15 @@
     
     
     
+    <!-- The same signed iOS target runs natively on both iPhone and iPad.
+         iPad Split View, Stage Manager and rotation use these orientations. -->
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
     <key>LSRequiresIPhoneOS</key>
     <true />
     <key>UILaunchScreen</key>
