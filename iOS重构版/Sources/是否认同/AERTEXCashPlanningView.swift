@@ -52,7 +52,7 @@ struct AERTEXCashPlanningView: View {
     let data: AERTEXCashData
     let balance: Double
 
-    private let money = FloatingPointFormatStyle<Double>.Currency.currency(code: "CNY")
+    private var money: FloatingPointFormatStyle<Double>.Currency { .currency(code: "CNY") }
     private var today: String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
