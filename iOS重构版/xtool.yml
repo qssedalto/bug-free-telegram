@@ -2,5 +2,7 @@ version: 1
 bundleID: com.tglab.shifourentong.ios
 product: 是否认同
 infoPath: xtool-Info.plist
-iconPath: Build/AppIcons/AppIcon1024.png
+# Generated from the same source artwork as the Xcode iPhone/Watch assets.
+# Run `bash CI/prepare_xtool.sh` before `xtool dev run`.
+iconPath: CI/GeneratedAssets.xcassets/AppIcon.appiconset/AppIcon1024.png
 
