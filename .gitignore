@@ -30,3 +30,7 @@
 
 Windows版/Assets/AppIcon-chroma.png
 Windows版/Assets/AppIcon-preview.png
+
+# Derived AERTEX iOS/watchOS brand images: reproducible from committed artwork.
+/iOS重构版/CI/GeneratedAssets.xcassets/
+/watchOS/AERTEXWatch/GeneratedAssets.xcassets/
