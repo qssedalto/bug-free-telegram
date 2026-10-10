@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - feat/aertex-ios-2-2-real-chat-glass-20261008
+      - fix/aertex-adhoc-signing-20261010
     paths:
       - "iOS重构版/**"
       - "watchOS/**"
@@ -183,8 +184,8 @@ jobs:
           test -s dist/AERTEX-iphone-profile-match-unsigned.ipa
 
       - name: Prepare and verify locally sealed IPA for third-party re-signing
-        # Experimental source signature, not an installable Apple profile.
-        continue-on-error: true
+        # Diagnostic ad-hoc signature only, not installable without device provisioning.
+        # Failure is intentional and must fail CI, not masquerade as a successful package.
         run: |
           set -euo pipefail
           src="$RUNNER_TEMP/aertex-derived/Build/Products/Release-iphoneos/AERTEX.app"
@@ -195,7 +196,12 @@ jobs:
           # Never modify any Info.plist or Mach-O executable afterwards.
           codesign --force --sign - --timestamp=none --generate-entitlement-der "$app/PlugIns/AERTEXWatch.app"
           codesign --force --sign - --timestamp=none --generate-entitlement-der "$app"
-          codesign --verify --deep --strict --verbose=2 "$app"
+          # Verify each iOS/watchOS code bundle explicitly. The macOS --deep
+          # traversal can misclassify the iOS Assets.car resource as nested code;
+          # the normal strict check still verifies the bundle resource seal.
+          codesign --verify --strict --verbose=2 "$app/PlugIns/AERTEXWatch.app"
+          codesign --verify --strict --verbose=2 "$app"
+          codesign -dv --verbose=4 "$app/PlugIns/AERTEXWatch.app" 2>&1 | grep -E 'Identifier=|CodeDirectory|Signature='
           codesign -dv --verbose=4 "$app" 2>&1 | grep -E 'Identifier=|CodeDirectory|Signature='
           ( cd "$RUNNER_TEMP/aertex-adhoc" && zip -qry "$GITHUB_WORKSPACE/dist/AERTEX-watch-adhoc-verified.ipa" Payload )
           test -s dist/AERTEX-watch-adhoc-verified.ipa
