@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- xtool merges these literal values into its generated bundle metadata.
+         DO NOT add Xcode $(...) placeholders or override CFBundleIdentifier,
+         CFBundleExecutable, or CFBundleName: xtool provisions its generated
+         identifier and executable directly from xtool.yml and Package.swift.
+         The Xcode-specific Info.plist remains a separate file. -->
+    <key>CFBundleDisplayName</key>
+    <string>AERTEX</string>
+    <key>CFBundleShortVersionString</key>
+    <string>2.2.0</string>
+    <key>CFBundleVersion</key>
+    <string>220</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 天国智造 · TGLab</string>
+</dict>
+</plist>
