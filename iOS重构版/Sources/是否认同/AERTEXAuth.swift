@@ -293,7 +293,7 @@ final class AERTEXAuthStore: ObservableObject {
         request.cachePolicy = .reloadIgnoringLocalCacheData
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("AERTEX/2.1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("AERTEX/2.2.0 (iOS)", forHTTPHeaderField: "User-Agent")
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else {
             throw AERTEXNativeError(message: "服务返回了无效响应。")
@@ -312,6 +312,272 @@ final class AERTEXAuthStore: ObservableObject {
         }
     }
 
+
+    /// Account-owned native AI conversation management. Only safe title and
+    /// deletion operations are exposed in iOS; all ownership is server checked.
+    func mutateAIConversation(
+        conversationId: String,
+        method: String,
+        title: String? = nil
+    ) async throws {
+        guard isAuthenticated,
+              conversationId.range(
+                of: "^[0-9A-Fa-f-]{36}$", options: .regularExpression
+              ) != nil,
+              ["PATCH", "DELETE"].contains(method) else {
+            throw AERTEXNativeError(message: "无效的对话管理操作。")
+        }
+        do {
+            try await performConversationMutation(
+                conversationId: conversationId, method: method, title: title
+            )
+        } catch let error as AERTEXNativeError where error.statusCode == 401 {
+            guard await refreshAccount() else { throw error }
+            try await performConversationMutation(
+                conversationId: conversationId, method: method, title: title
+            )
+        }
+    }
+
+    private func performConversationMutation(
+        conversationId: String, method: String, title: String?
+    ) async throws {
+        guard let accessToken,
+              let url = URL(string: "https://gpt.qsseda.com/api/native/intelligence/conversations/" + conversationId) else {
+            throw AERTEXNativeError(message: "缺少 AERTEX 访问令牌。", statusCode: 401)
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.timeoutInterval = 25
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if method == "PATCH" {
+            let text = (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty, text.count <= 120 else {
+                throw AERTEXNativeError(message: "标题长度需要在 1–120 个字符之间。")
+            }
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: ["title": text])
+        }
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AERTEXNativeError(message: "Intelligence 服务未返回有效响应。")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let payload = try? JSONDecoder().decode(AERTEXErrorResponse.self, from: data)
+            throw AERTEXNativeError(
+                message: payload?.error ?? "对话操作失败（HTTP \(http.statusCode)）。",
+                statusCode: http.statusCode
+            )
+        }
+        guard let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              parsed["ok"] as? Bool == true else {
+            throw AERTEXNativeError(message: "服务端尚未确认操作完成。")
+        }
+    }
+
+    /// First-party Studio mutations: existing server R2 engines enforce owner
+    /// prefixes and validate project/task fields. No service-role API key.
+    func nativeStudioMutation<Response: Decodable>(
+        _ type: Response.Type,
+        resource: String,
+        method: String,
+        id: String? = nil,
+        values: [String: Any]? = nil
+    ) async throws -> Response {
+        guard ["projects", "tasks"].contains(resource),
+              ["POST", "PUT", "DELETE"].contains(method),
+              (method == "POST" || id != nil),
+              isAuthenticated else {
+            throw AERTEXNativeError(message: "无效的 Studio 操作或登录状态。")
+        }
+        do {
+            return try await performStudioMutation(
+                type, resource: resource, method: method, id: id, values: values
+            )
+        } catch let error as AERTEXNativeError where error.statusCode == 401 {
+            guard await refreshAccount() else {
+                throw AERTEXNativeError(message: "登录会话已经过期。", statusCode: 401)
+            }
+            return try await performStudioMutation(
+                type, resource: resource, method: method, id: id, values: values
+            )
+        }
+    }
+
+    private func performStudioMutation<Response: Decodable>(
+        _ type: Response.Type, resource: String, method: String,
+        id: String?, values: [String: Any]?
+    ) async throws -> Response {
+        guard let accessToken,
+              var components = URLComponents(
+                string: "https://qsseda.com/api/native/studio/" + resource
+              ) else {
+            throw AERTEXNativeError(message: "没有有效的访问令牌。", statusCode: 401)
+        }
+        if let id { components.queryItems = [URLQueryItem(name: "id", value: id)] }
+        guard let url = components.url else {
+            throw AERTEXNativeError(message: "Studio 请求地址无效。")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.timeoutInterval = 30
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        if let values {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: values)
+        } else if method == "DELETE" {
+            request.httpBody = Data("{}".utf8)
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AERTEXNativeError(message: "Studio 没有返回有效响应。")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let payload = try? JSONDecoder().decode(AERTEXErrorResponse.self, from: data)
+            throw AERTEXNativeError(
+                message: payload?.error ?? "Studio 请求失败（HTTP \(http.statusCode)）。",
+                statusCode: http.statusCode
+            )
+        }
+        return try JSONDecoder().decode(Response.self, from: data)
+    }
+
+    /// Uses the existing first-party Intelligence gateway. No model provider
+    /// secret is ever handled by the iOS app. The server enforces quota/RLS.
+    func sendAIMessage(
+        _ message: String,
+        conversationId: String?,
+        providerId: String,
+        model: String,
+        onEvent: @escaping @MainActor (AERTEXAIStreamEvent) -> Void
+    ) async throws {
+        guard isAuthenticated else {
+            throw AERTEXNativeError(message: "请先登录 AERTEX ID。")
+        }
+        do {
+            try await streamAI(message, conversationId: conversationId,
+                               providerId: providerId, model: model, onEvent: onEvent)
+        } catch let error as AERTEXNativeError where error.statusCode == 401 {
+            guard await refreshAccount() else {
+                throw AERTEXNativeError(message: "会话已过期，请重新登录。", statusCode: 401)
+            }
+            try await streamAI(message, conversationId: conversationId,
+                               providerId: providerId, model: model, onEvent: onEvent)
+        }
+    }
+
+    private func streamAI(
+        _ message: String, conversationId: String?,
+        providerId: String, model: String,
+        onEvent: @escaping @MainActor (AERTEXAIStreamEvent) -> Void
+    ) async throws {
+        guard let accessToken,
+              let url = URL(string: "https://gpt.qsseda.com/api/native/intelligence/chat") else {
+            throw AERTEXNativeError(message: "没有有效的访问令牌。", statusCode: 401)
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 120
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("AERTEX/2.2.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "message": message,
+            "conversation_id": conversationId as Any? ?? NSNull(),
+            "provider_id": providerId,
+            "model": model
+        ])
+
+        let (bytes, response) = try await session.bytes(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AERTEXNativeError(message: "AI 服务没有返回有效的 HTTP 响应。")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            var responseBytes = Data()
+            for try await byte in bytes {
+                if responseBytes.count >= 32_768 { break }
+                responseBytes.append(byte)
+            }
+            let failure = try? JSONDecoder().decode(AERTEXStreamFailure.self, from: responseBytes)
+            throw AERTEXNativeError(
+                message: failure?.error ?? "AI 服务异常（HTTP \(http.statusCode)）。",
+                statusCode: http.statusCode
+            )
+        }
+
+        guard http.value(forHTTPHeaderField: "Content-Type")?.lowercased().contains("text/event-stream") == true else {
+            throw AERTEXNativeError(message: "AI 服务没有返回流式事件。")
+        }
+
+        var eventName = "message"
+        var dataLines: [String] = []
+        var finished = false
+        for try await rawLine in bytes.lines {
+            try Task.checkCancellation()
+            let line = rawLine.trimmingCharacters(in: .newlines)
+            if line.isEmpty {
+                if !dataLines.isEmpty {
+                    let completed = try deliverAIEvent(
+                        eventName, data: dataLines.joined(separator: "\n"), onEvent: onEvent
+                    )
+                    finished = finished || completed
+                }
+                eventName = "message"
+                dataLines.removeAll(keepingCapacity: true)
+                if finished { break }
+                continue
+            }
+            if line.hasPrefix("event:") {
+                eventName = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+            } else if line.hasPrefix("data:") {
+                dataLines.append(String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces))
+            }
+        }
+        if !finished && !dataLines.isEmpty {
+            finished = try deliverAIEvent(
+                eventName, data: dataLines.joined(separator: "\n"), onEvent: onEvent
+            )
+        }
+        if !finished {
+            throw AERTEXNativeError(message: "流式响应意外中断，未收到完成信号。")
+        }
+    }
+
+    private func deliverAIEvent(
+        _ name: String, data: String,
+        onEvent: @escaping @MainActor (AERTEXAIStreamEvent) -> Void
+    ) throws -> Bool {
+        guard let bytes = data.data(using: .utf8),
+              let payload = try? JSONSerialization.jsonObject(with: bytes) as? [String: Any] else {
+            return false
+        }
+        switch name {
+        case "meta":
+            if let id = payload["conversation_id"] as? String {
+                onEvent(.meta(conversationId: id))
+            }
+        case "delta":
+            if let text = payload["delta"] as? String, !text.isEmpty {
+                onEvent(.delta(text))
+            }
+        case "done":
+            onEvent(.done)
+            return true
+        case "error":
+            throw AERTEXNativeError(message: payload["error"] as? String ?? "AI 生成失败。")
+        default:
+            break
+        }
+        return false
+    }
+
     private func request<Response: Decodable>(
         path: String,
         method: String,
@@ -322,7 +588,7 @@ final class AERTEXAuthStore: ObservableObject {
         request.httpMethod = method
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("AERTEX/2.1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("AERTEX/2.2.0 (iOS)", forHTTPHeaderField: "User-Agent")
         if let bearer {
             request.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
         }
@@ -414,4 +680,14 @@ struct AERTEXNativeError: LocalizedError {
     let message: String
     var statusCode: Int? = nil
     var errorDescription: String? { message }
+}
+
+private struct AERTEXStreamFailure: Decodable {
+    let error: String?
+}
+
+enum AERTEXAIStreamEvent {
+    case meta(conversationId: String)
+    case delta(String)
+    case done
 }

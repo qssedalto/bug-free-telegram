@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - First-party native AERTEX API DTOs
-// These screens render JSON through SwiftUI. They never embed WKWebView,
+// Product screens use SwiftUI; only mathematical rich-text canvas uses sandboxed WKWebView,
 // reuse web cookies or persist access tokens in view state.
 
 struct AERTEXStudioOverview: Decodable {
@@ -113,6 +113,15 @@ struct AERTEXStudioNativeView: View {
                         LabeledContent("草稿", value: String(overview.counts.drafts))
                         LabeledContent("笔记", value: String(overview.counts.notes))
                     }
+                    Section {
+                        NavigationLink {
+                            AERTEXStudioManagerView()
+                        } label: {
+                            Label("管理项目与任务", systemImage: "square.and.pencil")
+                                .font(.headline)
+                        }
+                    }
+
                     Section("正在进行的项目") {
                         if overview.projects.isEmpty {
                             Text("目前没有活跃项目").foregroundStyle(.secondary)
@@ -140,7 +149,7 @@ struct AERTEXStudioNativeView: View {
                         }
                     }
                     Section {
-                        Label("数据来自 AERTEX Studio 的个人工作台接口，当前为只读视图。", systemImage: "lock.shield")
+                        Label("项目与任务可以进入管理页进行真实云端编辑，统计来自个人工作台。", systemImage: "lock.shield")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -153,7 +162,8 @@ struct AERTEXStudioNativeView: View {
                 }
             }
         }
-        .navigationTitle("AERTEX Studio")
+        .navigationTitle("Studio")
+        .aertexGlassBackButton()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { Task { await load() } } label: {
@@ -183,148 +193,7 @@ struct AERTEXStudioNativeView: View {
 
 // MARK: - AERTEX Intelligence conversation history
 
-struct AERTEXIntelligenceNativeView: View {
-    @EnvironmentObject private var auth: AERTEXAuthStore
-    @State private var conversations: [AERTEXConversation]?
-    @State private var error: String?
-    @State private var loading = false
-
-    var body: some View {
-        Group {
-            if let conversations {
-                List {
-                    Section {
-                        Label("以下是 AERTEX Intelligence 云端会话记录。当前版本支持原生阅读，消息发送尚未接入。", systemImage: "text.bubble")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                    Section("最近会话") {
-                        if conversations.isEmpty {
-                            Text("尚无会话记录").foregroundStyle(.secondary)
-                        }
-                        ForEach(conversations) { chat in
-                            NavigationLink {
-                                AERTEXConversationNativeView(conversationId: chat.id, title: chat.displayTitle)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 5) {
-                                    HStack {
-                                        Text(chat.displayTitle).font(.headline)
-                                        if chat.is_pinned == true {
-                                            Image(systemName: "pin.fill").foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    Text(chat.model ?? "AERTEX Intelligence")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                .padding(.vertical, 4)
-                            }
-                        }
-                    }
-                }
-                .refreshable { await load() }
-            } else if loading {
-                ProgressView("正在读取 Intelligence 会话…")
-            } else {
-                AERTEXNativeLoadMessage(message: error ?? "尚未加载会话记录") {
-                    Task { await load() }
-                }
-            }
-        }
-        .navigationTitle("Intelligence")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { Task { await load() } } label: { Image(systemName: "arrow.clockwise") }
-                    .disabled(loading)
-                    .accessibilityLabel("刷新会话")
-            }
-        }
-        .task { if conversations == nil { await load() } }
-    }
-
-    private func load() async {
-        guard !loading else { return }
-        loading = true
-        defer { loading = false }
-        do {
-            conversations = try await auth.nativeGet(
-                [AERTEXConversation].self,
-                product: .intelligence,
-                path: "/api/native/intelligence/conversations"
-            )
-            error = nil
-        } catch {
-            self.error = error.localizedDescription
-        }
-    }
-}
-
-struct AERTEXConversationNativeView: View {
-    @EnvironmentObject private var auth: AERTEXAuthStore
-    let conversationId: String
-    let title: String
-    @State private var detail: AERTEXConversationDetail?
-    @State private var error: String?
-    @State private var loading = false
-
-    var body: some View {
-        Group {
-            if let detail {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 15) {
-                        ForEach(detail.messages) { message in
-                            VStack(alignment: .leading, spacing: 7) {
-                                Label(message.role == "user" ? "你" : "AERTEX Intelligence",
-                                      systemImage: message.role == "user" ? "person.crop.circle" : "sparkles")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                Text(message.content ?? "")
-                                    .font(.body)
-                                    .textSelection(.enabled)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .padding(16)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        if detail.messages.isEmpty {
-                            Label("没有消息", systemImage: "bubble.left.and.text.bubble.right")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .padding(18)
-                }
-                .refreshable { await load() }
-            } else if loading {
-                ProgressView("正在读取会话…")
-            } else {
-                AERTEXNativeLoadMessage(message: error ?? "无法加载会话") {
-                    Task { await load() }
-                }
-            }
-        }
-        .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.inline)
-        .task { if detail == nil { await load() } }
-    }
-
-    private func load() async {
-        guard !loading else { return }
-        loading = true
-        defer { loading = false }
-        do {
-            detail = try await auth.nativeGet(
-                AERTEXConversationDetail.self, product: .intelligence,
-                path: "/api/native/intelligence/conversations/" + conversationId
-            )
-            error = nil
-        } catch {
-            self.error = error.localizedDescription
-        }
-    }
-}
-
-// MARK: - AERTEX Watch sync sources
+// Native Intelligence chat UI now lives in AERTEXIntelligenceChat.swift.
 
 struct AERTEXWatchNativeView: View {
     @EnvironmentObject private var auth: AERTEXAuthStore
@@ -357,6 +226,12 @@ struct AERTEXWatchNativeView: View {
                             Text("尚无 ActivityWatch 数据源").foregroundStyle(.secondary)
                         }
                         ForEach(sources) { source in
+                            NavigationLink {
+                                AERTEXWatchBucketView(
+                                    bucketId: source.id,
+                                    bucketName: source.bucket.hostname ?? source.id
+                                )
+                            } label: {
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(source.bucket.hostname ?? "未知设备").font(.headline)
                                 Text(source.bucket.type ?? source.id)
@@ -367,10 +242,11 @@ struct AERTEXWatchNativeView: View {
                                 }
                             }
                             .padding(.vertical, 3)
+                            }
                         }
                     }
                     Section {
-                        Label("这里展示已同步至 AERTEX Watch 云端的电脑活动数据源，不会自动读取 iPhone 或 Apple Watch 健康数据。", systemImage: "lock.shield")
+                        Label { AERTEXBrandedText("这里展示已同步至 AERTEX Watch 云端的电脑活动数据源，不会自动读取 iPhone 或 Apple Watch 健康数据。") } icon: { Image(systemName: "lock.shield") }
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -383,7 +259,8 @@ struct AERTEXWatchNativeView: View {
                 }
             }
         }
-        .navigationTitle("AERTEX Watch")
+        .navigationTitle("Watch")
+        .aertexGlassBackButton()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { Task { await load() } } label: { Image(systemName: "arrow.clockwise") }

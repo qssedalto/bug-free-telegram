@@ -1,0 +1,39 @@
+name: Build independent iOS signing diagnostic tool
+
+on:
+  push:
+    branches:
+      - feat/aertex-ios-2-2-real-chat-glass-20261008
+    paths:
+      - ".github/workflows/build-signing-tool.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-zsign:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Build public-source cross-platform signer
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y git g++ pkg-config libssl-dev
+          git clone --depth 1 https://github.com/zhlynn/zsign.git /tmp/zsign-source
+          cd /tmp/zsign-source/build/linux
+          make -j2
+          test -x /tmp/zsign-source/bin/zsign
+          /tmp/zsign-source/bin/zsign -h | head -n 25 || true
+          mkdir -p "$GITHUB_WORKSPACE/tool"
+          cp /tmp/zsign-source/bin/zsign "$GITHUB_WORKSPACE/tool/zsign"
+          file "$GITHUB_WORKSPACE/tool/zsign"
+          ldd "$GITHUB_WORKSPACE/tool/zsign" || true
+
+      - name: Upload signer binary without any certificates
+        uses: actions/upload-artifact@v4
+        with:
+          name: zsign-linux-x86_64-diagnostic
+          path: tool/zsign
+          retention-days: 2

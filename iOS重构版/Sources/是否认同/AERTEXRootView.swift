@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// Tracks native drill-down destinations independently of the three root tabs.
+final class AERTEXTabChrome: ObservableObject {
+    @Published var hidden = false
+}
+
+
 /// AERTEX is now the application. The original "是否认同" experience is
 /// one self-contained module inside the native AERTEX product shell.
 enum AERTEXSection: Hashable {
@@ -31,7 +37,7 @@ struct AERTEXService: Identifiable {
     )
     static let intelligence = AERTEXService(
         id: "intelligence", title: "AERTEX Intelligence",
-        subtitle: "原生历史会话浏览", symbol: "sparkles",
+        subtitle: "原生流式 AI 对话 · 数学公式", symbol: "sparkles",
         address: "https://gpt.qsseda.com"
     )
     static let watch = AERTEXService(
@@ -46,6 +52,7 @@ struct AERTEXService: Identifiable {
  * Work remains an explicit Safari link until its own mobile API is ready.
  */
 struct AERTEXServiceLink<LabelContent: View>: View {
+    @EnvironmentObject private var tabChrome: AERTEXTabChrome
     let service: AERTEXService
     let label: () -> LabelContent
 
@@ -58,7 +65,9 @@ struct AERTEXServiceLink<LabelContent: View>: View {
         if service.id == "work" {
             Link(destination: service.url, label: label)
         } else {
-            NavigationLink(destination: destination, label: label)
+            NavigationLink(destination: destination
+                .onAppear { tabChrome.hidden = true }
+                .onDisappear { tabChrome.hidden = false }, label: label)
         }
     }
 
@@ -78,21 +87,34 @@ struct AERTEXRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: AERTEXSection = .home
     @State private var showAgree = false
+    @StateObject private var tabChrome = AERTEXTabChrome()
+    @State private var dragSelection: AERTEXSection?
 
     var body: some View {
-        TabView(selection: $selection) {
-            AERTEXHomeView(selection: $selection, showAgree: $showAgree)
-                .tabItem { Label("首页", systemImage: "house.fill") }
-                .tag(AERTEXSection.home)
+        // The floating capsule is a *layout sibling*, not an overlay. This
+        // guarantees every ScrollView has real usable space above the bar.
+        VStack(spacing: 0) {
+            Group {
+                switch selection {
+                case .home:
+                    AERTEXHomeView(selection: $selection, showAgree: $showAgree)
+                case .services:
+                    AERTEXServicesView(showAgree: $showAgree)
+                case .account:
+                    AERTEXHubView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            AERTEXServicesView(showAgree: $showAgree)
-                .tabItem { Label("服务", systemImage: "square.grid.2x2.fill") }
-                .tag(AERTEXSection.services)
-
-            AERTEXHubView()
-                .tabItem { Label("我的", systemImage: "person.crop.circle.fill") }
-                .tag(AERTEXSection.account)
+            if !tabChrome.hidden {
+                capsuleTabBar
+                    .padding(.horizontal, 18)
+                    .padding(.top, 6)
+                    .padding(.bottom, 12)
+            }
         }
+        .background { LiquidGlassBackdrop() }
+        .environmentObject(tabChrome)
         .tint(preferences.accentControlColor)
         .fullScreenCover(isPresented: $showAgree) {
             ContentView(presentedFromAERTEX: true)
@@ -105,6 +127,73 @@ struct AERTEXRootView: View {
                 }
             }
         }
+    }
+
+    private let tabs: [AERTEXSection] = [.home, .services, .account]
+
+    private var capsuleTabBar: some View {
+        LiquidGlassContainer(spacing: 8) {
+            GeometryReader { geometry in
+                let itemWidth = max(1, (geometry.size.width - 14) / 3)
+                HStack(spacing: 0) {
+                    capsuleItem(.home, label: "首页", symbol: "house.fill")
+                    capsuleItem(.services, label: "服务", symbol: "square.grid.2x2.fill")
+                    capsuleItem(.account, label: "我的", symbol: "person.crop.circle.fill")
+                }
+                .padding(7)
+                // One system glass material, no stacked translucent shells.
+                .liquidGlassCapsule(interactive: true)
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 4)
+                        .onChanged { gesture in
+                            let raw = Int((gesture.location.x - 7) / itemWidth)
+                            let index = min(2, max(0, raw))
+                            let next = tabs[index]
+                            if dragSelection != next {
+                                dragSelection = next
+                            }
+                        }
+                        .onEnded { gesture in
+                            let raw = Int((gesture.location.x - 7) / itemWidth)
+                            let index = min(2, max(0, raw))
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                                selection = tabs[index]
+                            }
+                            dragSelection = nil
+                        }
+                )
+            }
+            .frame(height: 64)
+            .frame(maxWidth: 470)
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private func capsuleItem(
+        _ item: AERTEXSection, label: String, symbol: String
+    ) -> some View {
+        let active = (dragSelection ?? selection) == item
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                selection = item
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: symbol).font(.system(size: 17, weight: .semibold))
+                Text(label).font(.caption.weight(active ? .bold : .medium))
+            }
+            .foregroundStyle(active ? preferences.accentControlColor : .secondary)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .background {
+                if active {
+                    Capsule().fill(preferences.accentColor.opacity(0.17))
+                }
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(active ? [.isSelected] : [])
     }
 }
 
@@ -135,14 +224,19 @@ struct AERTEXHomeView: View {
                         footer
                     }
                     .padding(.horizontal, sizeClass == .regular ? 30 : 18)
-                    .padding(.vertical, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 20)
                     .frame(maxWidth: 940)
                     .frame(maxWidth: .infinity)
                 }
             }
             .background { LiquidGlassBackdrop() }
             .navigationTitle("AERTEX")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    AERTEXWordmarkView(height: 17)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         selection = .account
@@ -162,8 +256,7 @@ struct AERTEXHomeView: View {
                     .padding(10)
                     .liquidGlassSurface(cornerRadius: 18, tint: preferences.accentColor.opacity(0.13))
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("AERTEX")
-                        .font(.system(.largeTitle, design: .rounded).weight(.heavy))
+                    AERTEXWordmarkView(height: 31)
                     Text("你的个人数字空间")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
@@ -176,7 +269,7 @@ struct AERTEXHomeView: View {
                     .font(.title2.weight(.bold))
                     .lineLimit(2)
                     .minimumScaleFactor(0.76)
-                Text("从一个地方访问你的 AERTEX 服务与应用。")
+                AERTEXBrandedText("从一个地方访问你的 AERTEX 服务与应用。")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -203,7 +296,7 @@ struct AERTEXHomeView: View {
             Text(title)
                 .font(.title3.weight(.bold))
             Spacer()
-            Text(detail)
+            AERTEXBrandedText(detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -219,7 +312,7 @@ struct AERTEXHomeView: View {
                             .font(.title2)
                             .foregroundStyle(preferences.accentControlColor)
                             .frame(height: 30)
-                        Text(service.title)
+                        AERTEXBrandedText(service.title)
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.primary)
                             .lineLimit(2)
@@ -278,7 +371,7 @@ struct AERTEXHomeView: View {
     private var footer: some View {
         HStack(spacing: 6) {
             Image(systemName: "lock.shield")
-            Text("通过 AERTEX ID 连接")
+            AERTEXBrandedText("通过 AERTEX ID 连接")
             Spacer()
             Text("© TGLab")
         }
@@ -297,9 +390,9 @@ struct AERTEXServicesView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 7) {
-                        Text("连接 AERTEX")
+                        AERTEXBrandedText("连接 AERTEX")
                             .font(.title2.weight(.bold))
-                        Text("Studio 工作台、Intelligence 会话和 Watch 同步状态已接入原生 API；Work 暂时仍由 Safari 打开。")
+                        Text("Studio 工作台、Intelligence 原生 AI 对话和 Watch 同步状态均已接入原生 API；Work 暂时由 Safari 打开。")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -367,7 +460,11 @@ struct AERTEXServicesView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(18)
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                // The bottom floating control belongs to the root TabView;
+                // reserve extra content clearance inside nested ScrollViews.
+                .padding(.bottom, 20)
                 .frame(maxWidth: 800)
                 .frame(maxWidth: .infinity)
             }
