@@ -201,7 +201,24 @@ jobs:
           codesign --force --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$app/PlugIns/AERTEXWatch.app"
           echo "### VERIFY: watch"
           codesign --verify --strict --verbose=4 "$app/PlugIns/AERTEXWatch.app"
-          echo "### SIGNING: iPhone"
+          echo "### EXPERIMENT: ad-hoc sign without embedded Watch"
+          phone_only="$RUNNER_TEMP/aertex-sign-isolation/AERTEX.app"
+          mkdir -p "$(dirname "$phone_only")"
+          ditto "$app" "$phone_only"
+          rm -rf "$phone_only/PlugIns/AERTEXWatch.app"
+          if codesign --force --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$phone_only"; then
+            echo "### PHONE-ONLY SIGNED OK"
+            codesign --verify --strict --verbose=4 "$phone_only"
+          else
+            echo "### PHONE-ONLY SIGN FAILED"
+          fi
+          echo "### EXPERIMENT: ad-hoc sign containing app with --deep"
+          if codesign --force --deep --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$app"; then
+            echo "### FULL SIGNED WITH --deep"
+          else
+            echo "### DEEP SIGN FAILED"
+          fi
+          echo "### SIGNING: iPhone normal"
           codesign --force --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$app"
           echo "### VERIFY: iPhone"
           codesign --verify --strict --verbose=4 "$app"
