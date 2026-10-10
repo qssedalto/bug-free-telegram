@@ -4,7 +4,7 @@ import UIKit
 /// An adaptive native iPad workspace, deliberately sharing the same API-backed
 /// screens, authentication and feature models as the iPhone application.
 private enum AERTEXPadSection: Hashable {
-    case home, services, studio, intelligence, watch, account, agree
+    case home, services, studio, intelligence, work, cash, watch, account, agree
 }
 
 struct AERTEXPadRootView: View {
@@ -56,10 +56,9 @@ struct AERTEXPadRootView: View {
                 Section("原生服务") {
                     sidebarRow("Intelligence", systemImage: "sparkles", section: .intelligence)
                     sidebarRow("Studio", systemImage: "square.stack.3d.up.fill", section: .studio)
+                    sidebarRow("Work", systemImage: "doc.text", section: .work)
+                    sidebarRow("Cash", systemImage: "banknote.fill", section: .cash)
                     sidebarRow("Watch", systemImage: "applewatch", section: .watch)
-                    Link(destination: AERTEXService.work.url) {
-                        Label("Work · Safari", systemImage: "rectangle.3.group.fill")
-                    }
                 }
 
                 Section("我的 AERTEX") {
@@ -91,6 +90,10 @@ struct AERTEXPadRootView: View {
                     NavigationStack { AERTEXIntelligenceNativeView() }
                 case .watch:
                     NavigationStack { AERTEXWatchNativeView() }
+                case .work:
+                    NavigationStack { AERTEXWorkNativeView() }
+                case .cash:
+                    NavigationStack { AERTEXCashNativeView() }
                 case .account:
                     AERTEXHubView()
                 case .agree:
