@@ -59,3 +59,18 @@ AERTEX 的「首页」和「服务」页现在可直接打开三个 SwiftUI 服�
 **胶囊底栏**：三个一级 Tab 使用系统 Liquid Glass 的浮动胶囊容器，外观适配 iOS 27（iOS 26 起支持的玻璃 API）；早期 iOS 使用超薄材质回退。对话输入框与消息气泡也采用系统 Liquid Glass。
 
 **上线依赖**：服务器 `qssed.studio` 配套 PR 必须先合并部署。GitHub Swift parser 只验证语法；完整类型检查、资源捆绑、渲染截图、SSE/后台切换与 iPhone 设备稳定性须使用实际 xtool iOS SDK 编译及真机测试。
+
+## 2.2.0：Omarchy xtool 与 Xcode 图标完全一致
+
+**问题与解决：** `xtool.yml` 曾指向 `Build/AppIcons/AppIcon1024.png`（旧「是否认同」图标），而 GitHub Xcode 构建使用 `CI/render_brand_assets.py` 从主站 AERTEX 标志生成的新图标；所以真机用 xtool 安装时主屏幕仍是旧图标。现在 `iconPath` 指向同一脚本生成的 `CI/GeneratedAssets.xcassets/AppIcon.appiconset/AppIcon1024.png`。
+
+在 `iOS重构版` 目录执行：
+
+```bash
+bash CI/prepare_xtool.sh
+/home/omarchy/.local/bin/xtool dev run --udid 00008140-001150840139801C --usb
+```
+
+`prepare_xtool.sh` 自动创建并复用用户缓存的 Python 虚拟环境，在首次运行时安装 Pillow，从项目内原始 AERTEX 图形生成 iPhone、iPad 和 Apple Watch 所用的相同 1024px 图标，并校验新旧图标不同、双端图标一致。以后 **每次使用 xtool 编译前均先运行此脚本**；不用删除旧 App，不要因此更改 Bundle ID，以保护原应用的本地数据。虚拟环境首次安装 Pillow 需要联网。
+
+Xcode CI 仍按原路径生成相同的品牌资源；此改动不会让 `xtool dev run` 自动安装 Apple Watch App。保留 Swift Package 的内部名字「是否认同」是为了不扰动 xtool 构建目标，iPhone 主屏幕显示名称仍为 AERTEX。
