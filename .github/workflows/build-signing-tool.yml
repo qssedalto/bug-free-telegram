@@ -24,10 +24,10 @@ jobs:
           git clone --depth 1 https://github.com/zhlynn/zsign.git /tmp/zsign-source
           cd /tmp/zsign-source/build/linux
           make -j2
-          test -x ./zsign
-          ./zsign -h | head -n 25 || true
+          test -x /tmp/zsign-source/bin/zsign
+          /tmp/zsign-source/bin/zsign -h | head -n 25 || true
           mkdir -p "$GITHUB_WORKSPACE/tool"
-          cp ./zsign "$GITHUB_WORKSPACE/tool/zsign"
+          cp /tmp/zsign-source/bin/zsign "$GITHUB_WORKSPACE/tool/zsign"
           file "$GITHUB_WORKSPACE/tool/zsign"
           ldd "$GITHUB_WORKSPACE/tool/zsign" || true
 
