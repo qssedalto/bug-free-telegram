@@ -35,10 +35,10 @@ struct AERTEXWorkNativeView: View {
                 NavigationLink {
                     AERTEXWorkEditorView(documentId: nil)
                 } label: {
-                    Label("新建 TeX 文档", systemImage: "doc.badge.plus")
+                    Label("新建文档", systemImage: "doc.badge.plus")
                 }
             }
-            Section("我的 TeX 文档") {
+            Section("我的文档") {
                 if loading {
                     ProgressView("正在同步 Work…")
                 } else if let error {
@@ -46,7 +46,7 @@ struct AERTEXWorkNativeView: View {
                         Task { await reload() }
                     }
                 } else if documents.isEmpty {
-                    Label("尚无云端文档", systemImage: "doc.text")
+                    Label("还没有文档，开始创建第一份吧", systemImage: "doc.text")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(documents) { doc in
@@ -68,11 +68,8 @@ struct AERTEXWorkNativeView: View {
                 }
             }
             Section {
-                Link(destination: URL(string: "https://work.qsseda.com")!) {
-                    Label("高级 TeX 编译、PDF 预览与实时协作", systemImage: "arrow.up.right.square")
-                }
-            } footer: {
-                Text("原生版支持个人文档查看、新建和手动保存。共享文档权限、PDF 编译及实时协作仍使用 Work 网页工作台。")
+                Label("文档会保存到你的 AERTEX 账户。PDF 正式排版及多人协作仍需服务端提供相应能力。", systemImage: "info.circle")
+                    .font(.footnote).foregroundStyle(.secondary)
             }
         }
         .scrollContentBackground(.hidden)
@@ -130,7 +127,7 @@ struct AERTEXWorkEditorView: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack(spacing: 10) {
-                TextField("TeX 文档标题", text: $title)
+                TextField("文档标题", text: $title)
                     .textFieldStyle(.roundedBorder)
                     .disabled(loading || saving)
                 Picker("引擎", selection: $engine) {
@@ -142,6 +139,21 @@ struct AERTEXWorkEditorView: View {
                 .disabled(loading || saving)
             }
             .padding(.horizontal, 14)
+            if documentId == nil && source.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(AERTEXWorkTemplate.allCases) { template in
+                            Button {
+                                source = template.source
+                                if title.isEmpty { title = template.title }
+                            } label: {
+                                Label(template.title, systemImage: template.symbol)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }.padding(.horizontal, 14)
+                }
+            }
             if loading {
                 Spacer()
                 ProgressView("正在读取 Work 文档…")
@@ -169,11 +181,21 @@ struct AERTEXWorkEditorView: View {
         .padding(.top, 12)
         .padding(.bottom, 12)
         .background { LiquidGlassBackdrop() }
-        .navigationTitle(documentId == nil ? "新建 Work 文档" : "编辑 Work 文档")
+        .navigationTitle(documentId == nil ? "新建文档" : "编辑文档")
         .navigationBarTitleDisplayMode(.inline)
         .aertexGlassBackButton()
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                NavigationLink {
+                    AERTEXWorkOutlineView(title: title, source: source)
+                } label: {
+                    Image(systemName: "list.bullet.indent")
+                }
+                .accessibilityLabel("查看文档大纲")
+                ShareLink(item: source) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .accessibilityLabel("分享文档源代码")
                 Button {
                     Task { await save() }
                 } label: {

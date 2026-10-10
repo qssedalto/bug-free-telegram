@@ -20,6 +20,10 @@ struct AERTEXCashData: Decodable {
     let version: Int
     let settings: AERTEXCashSettings?
     let transactions: [AERTEXCashTransaction]?
+    let plannedEvents: [AERTEXCashPlannedEvent]?
+    let expectedEvents: [AERTEXCashExpectedEvent]?
+    let recurringExpenses: [AERTEXCashRecurringExpense]?
+    let budgetRules: AERTEXCashBudgetRules?
 }
 struct AERTEXCashResponse: Decodable {
     let data: AERTEXCashData
@@ -87,7 +91,16 @@ struct AERTEXCashNativeView: View {
                     Label("记录收入或支出", systemImage: "plus.circle.fill")
                 }
             }
-            Section("真实流水（\(transactions.count) 笔）") {
+            if let accountData = payload?.data {
+                Section {
+                    NavigationLink {
+                        AERTEXCashPlanningView(data: accountData, balance: actualCashBalance)
+                    } label: {
+                        Label("查看预算、固定支出与未来计划", systemImage: "chart.line.uptrend.xyaxis")
+                    }
+                }
+            }
+            Section("收支记录（\(transactions.count) 笔）") {
                 if loading && payload == nil {
                     ProgressView("正在连接 Cash…")
                 } else if let error {
@@ -114,11 +127,8 @@ struct AERTEXCashNativeView: View {
                 }
             }
             Section {
-                Link(destination: URL(string: "https://cash.qsseda.com")!) {
-                    Label("完整预算预测与计划管理", systemImage: "arrow.up.right.square")
-                }
-            } footer: {
-                Text("原生版共享同一份 Cash 云端账本，支持安全新增实际交易。高级预算、计划和预测计算仍由主站维护。")
+                Text("你的账本、预算及未来计划在 App 内统一查看。正式预测需要综合抵扣、周期支出与预算规则，参考金额不代表完整预测。")
+                    .font(.footnote).foregroundStyle(.secondary)
             }
         }
         .scrollContentBackground(.hidden)
@@ -203,14 +213,14 @@ struct AERTEXCashEntryView: View {
                 }
                 TextField("备注（选填）", text: $note, axis: .vertical)
                     .lineLimit(1...4)
-                Text("新交易写入与网站相同的云端账本，不会覆盖已有预算规则；花呗与计划关联请在完整 Cash 工作台处理。")
+                Text("保存后会同步到账户账本。关联现有分期或未来计划的功能尚未开放，避免重复计算。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 if let error {
                     Text(error).foregroundStyle(.red).font(.footnote)
                 }
             }
-            .navigationTitle("新增 Cash 流水")
+            .navigationTitle("记一笔")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

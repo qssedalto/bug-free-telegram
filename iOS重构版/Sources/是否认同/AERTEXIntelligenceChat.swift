@@ -573,7 +573,7 @@ struct AERTEXConversationNativeView: View {
             }
             selectedModelId = (defaults ?? loaded.models.first(where: { $0.canUse }))?.id ?? ""
             if chosenModel == nil {
-                error = "此账户尚未配置可用的 AI 模型，请先在主站配置模型。"
+                error = "当前还没有可用的 AI 模型。请检查账户中的模型服务设置，或稍后重试。"
             }
         } catch {
             self.error = error.localizedDescription
