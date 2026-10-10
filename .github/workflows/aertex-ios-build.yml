@@ -205,49 +205,32 @@ jobs:
           test -s dist/AERTEX-iphone-profile-match-unsigned.ipa
 
       - name: Prepare and verify locally sealed IPA for third-party re-signing
-        # Diagnostic ad-hoc signature only, not installable without device provisioning.
-        # Failure is intentional and must fail CI, not masquerade as a successful package.
+        # This is a local ad-hoc integrity test, not an Apple provisioning signature.
+        # On unsigned Xcode 26 device bundles, a direct parent sign misidentifies
+        # unsigned Assets.car and AppIcon resources as embedded code. The first
+        # recursive pass pre-seals them; then explicitly re-sign the parent.
+        # Do NOT use --deep for real Apple distribution/profile signing.
         run: |
           set -euo pipefail
           src="$RUNNER_TEMP/aertex-derived/Build/Products/Release-iphoneos/AERTEX.app"
           app="$RUNNER_TEMP/aertex-adhoc/Payload/AERTEX.app"
           mkdir -p "$RUNNER_TEMP/aertex-adhoc/Payload"
           ditto "$src" "$app"
-          # Diagnose bundle structure and permissions before signing.
-          echo "### SIGNING DIAGNOSTICS: start"
-          ls -la "$app" "$app/PlugIns/AERTEXWatch.app"
-          file "$app/AERTEX" "$app/Assets.car" "$app/PlugIns/AERTEXWatch.app/AERTEXWatch" "$app/PlugIns/AERTEXWatch.app/Assets.car"
-          stat -f '%N mode=%Sp flags=%Sf' "$app/AERTEX" "$app/Assets.car" "$app/PlugIns/AERTEXWatch.app/AERTEXWatch" "$app/PlugIns/AERTEXWatch.app/Assets.car"
-          echo "### SIGNING: watch"
-          codesign --force --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$app/PlugIns/AERTEXWatch.app"
-          echo "### VERIFY: watch"
-          codesign --verify --strict --verbose=4 "$app/PlugIns/AERTEXWatch.app"
-          echo "### EXPERIMENT: ad-hoc sign without embedded Watch"
-          phone_only="$RUNNER_TEMP/aertex-sign-isolation/AERTEX.app"
-          mkdir -p "$(dirname "$phone_only")"
-          ditto "$app" "$phone_only"
-          rm -rf "$phone_only/PlugIns/AERTEXWatch.app"
-          if codesign --force --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$phone_only"; then
-            echo "### PHONE-ONLY SIGNED OK"
-            codesign --verify --strict --verbose=4 "$phone_only"
-          else
-            echo "### PHONE-ONLY SIGN FAILED"
-          fi
-          echo "### EXPERIMENT: ad-hoc sign containing app with --deep"
-          if codesign --force --deep --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$app"; then
-            echo "### FULL SIGNED WITH --deep"
-          else
-            echo "### DEEP SIGN FAILED"
-          fi
-          echo "### SIGNING: iPhone normal"
-          codesign --force --sign - --timestamp=none --generate-entitlement-der --verbose=4 "$app"
-          echo "### VERIFY: iPhone"
-          codesign --verify --strict --verbose=4 "$app"
-          codesign -dv --verbose=4 "$app/PlugIns/AERTEXWatch.app" 2>&1 | grep -E 'Identifier=|CodeDirectory|Signature='
+          watch="$app/PlugIns/AERTEXWatch.app"
+          test -s "$watch/AERTEXWatch"
+          codesign --force --sign - --timestamp=none --generate-entitlement-der "$watch"
+          codesign --verify --strict --verbose=2 "$watch"
+          # Diagnostic pre-seal only. Confirmed on macos-26/Xcode 26.6.
+          codesign --force --deep --sign - --timestamp=none --generate-entitlement-der "$app"
+          codesign --force --sign - --timestamp=none --generate-entitlement-der "$app"
+          # The sealed container must include a still-valid signed Watch.
+          codesign --verify --strict --verbose=2 "$watch"
+          codesign --verify --strict --verbose=2 "$app"
+          codesign -dv --verbose=4 "$watch" 2>&1 | grep -E 'Identifier=|CodeDirectory|Signature='
           codesign -dv --verbose=4 "$app" 2>&1 | grep -E 'Identifier=|CodeDirectory|Signature='
           ( cd "$RUNNER_TEMP/aertex-adhoc" && zip -qry "$GITHUB_WORKSPACE/dist/AERTEX-watch-adhoc-verified.ipa" Payload )
           test -s dist/AERTEX-watch-adhoc-verified.ipa
-          echo "This ad-hoc IPA is only a consistent source for re-signing; it cannot install by itself."
+          echo "Verified ad-hoc IPA: local integrity/re-signing source only; not device-installable."
 
       - name: Upload build log
         if: always()
