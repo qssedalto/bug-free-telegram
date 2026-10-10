@@ -7,6 +7,9 @@ on:
       - "iOS重构版/Package.swift"
       - "iOS重构版/xtool.yml"
       - "iOS重构版/xtool-Info.plist"
+      - "iOS重构版/CI/**"
+      - "iOS重构版/Sources/是否认同/Resources/AERTEXMark.png"
+      - "iOS重构版/Sources/是否认同/Resources/AERTEXWordmark.svg"
       - ".github/workflows/aertex-ios-syntax.yml"
   push:
     branches: [main]
@@ -15,6 +18,9 @@ on:
       - "iOS重构版/Package.swift"
       - "iOS重构版/xtool.yml"
       - "iOS重构版/xtool-Info.plist"
+      - "iOS重构版/CI/**"
+      - "iOS重构版/Sources/是否认同/Resources/AERTEXMark.png"
+      - "iOS重构版/Sources/是否认同/Resources/AERTEXWordmark.svg"
       - ".github/workflows/aertex-ios-syntax.yml"
 
 permissions:
@@ -30,6 +36,9 @@ jobs:
       - name: Parse native iOS Swift source
         run: |
           find "iOS重构版/Sources" -name '*.swift' -print0 | xargs -0 swiftc -frontend -parse
+      - name: Generate and verify the same AERTEX icon for xtool and Xcode
+        working-directory: iOS重构版
+        run: bash CI/prepare_xtool.sh
       - name: Validate xtool provisioning metadata
         run: |
           python3 - <<'PY'
