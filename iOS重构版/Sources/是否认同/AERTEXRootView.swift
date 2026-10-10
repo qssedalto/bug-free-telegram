@@ -27,27 +27,27 @@ struct AERTEXService: Identifiable {
     // Studio, Intelligence and Watch now navigate into verified native API views.
     static let studio = AERTEXService(
         id: "studio", title: "AERTEX Studio",
-        subtitle: "原生项目、任务与工作台", symbol: "square.grid.2x2.fill",
+        subtitle: "项目、任务与工作台", symbol: "square.grid.2x2.fill",
         address: "https://qsseda.com/zh-cn/dashboard"
     )
     static let work = AERTEXService(
         id: "work", title: "AERTEX Work",
-        subtitle: "独立工作空间", symbol: "rectangle.3.group.fill",
+        subtitle: "文档、编辑与写作", symbol: "rectangle.3.group.fill",
         address: "https://work.qsseda.com"
     )
     static let cash = AERTEXService(
         id: "cash", title: "AERTEX Cash",
-        subtitle: "原生现金账本与收支记录", symbol: "banknote.fill",
+        subtitle: "记账、预算与未来计划", symbol: "banknote.fill",
         address: "https://cash.qsseda.com"
     )
     static let intelligence = AERTEXService(
         id: "intelligence", title: "AERTEX Intelligence",
-        subtitle: "原生流式 AI 对话 · 数学公式", symbol: "sparkles",
+        subtitle: "AI 对话、学习与创作", symbol: "sparkles",
         address: "https://gpt.qsseda.com"
     )
     static let watch = AERTEXService(
         id: "watch", title: "AERTEX Watch",
-        subtitle: "原生活动同步状态", symbol: "applewatch",
+        subtitle: "电脑活动与使用记录", symbol: "applewatch",
         address: "https://aw.qsseda.com"
     )
     static let all = [studio, work, intelligence, watch, cash]
@@ -220,9 +220,9 @@ struct AERTEXHomeView: View {
                 LiquidGlassContainer(spacing: 18) {
                     VStack(alignment: .leading, spacing: 22) {
                         hero
-                        sectionHeader("工作空间", detail: "AERTEX 服务入口")
+                        sectionHeader("工作空间", detail: "你的常用工具")
                         serviceGrid
-                        sectionHeader("我的应用", detail: "原生功能")
+                        sectionHeader("我的应用", detail: "轻松开始")
                         agreeCard
                         footer
                     }
@@ -325,7 +325,7 @@ struct AERTEXHomeView: View {
                             .lineLimit(2)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         HStack {
-                            Text("原生服务")
+                            Text("立即打开")
                             Spacer()
                             Image(systemName: "arrow.up.right")
                         }
@@ -395,7 +395,7 @@ struct AERTEXServicesView: View {
                     VStack(alignment: .leading, spacing: 7) {
                         AERTEXBrandedText("连接 AERTEX")
                             .font(.title2.weight(.bold))
-                        Text("Studio、Intelligence、Work 文档、Cash 账本与 Watch 活动数据均提供原生入口；高级 Work 协作、Cash 预算预测仍保留网页入口。")
+                        Text("你的项目、文档、智能助手、收支计划与电脑活动记录，都可以直接在 App 中查看与使用。部分需要服务器支持的高级操作将逐步开放。")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -416,7 +416,7 @@ struct AERTEXServicesView: View {
                                 VStack(alignment: .leading, spacing: 5) {
                                     Text("是否认同")
                                         .font(.headline)
-                                    Text("原生趣味模块 · 剧情与数据")
+                                    Text("互动剧情与选择记录")
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
                                 }
@@ -448,7 +448,7 @@ struct AERTEXServicesView: View {
                                     Text(service.subtitle)
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
-                                    Text("打开原生页面")
+                                    Text("立即打开")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
