@@ -104,7 +104,7 @@ struct AERTEXWorkNativeView: View {
             documents = response.documents
             error = nil
         } catch {
-            self.error = error.localizedDescription
+            self.self.error = error.localizedDescription
         }
     }
 }
@@ -200,7 +200,7 @@ struct AERTEXWorkEditorView: View {
             etag = response.etag
             error = nil
         } catch {
-            self.error = error.localizedDescription
+            self.self.error = error.localizedDescription
         }
     }
 
@@ -233,7 +233,7 @@ struct AERTEXWorkEditorView: View {
             notice = "已同步到 Work 云端"
         } catch {
             notice = nil
-            error = error.localizedDescription
+            self.error = error.localizedDescription
         }
     }
 }
