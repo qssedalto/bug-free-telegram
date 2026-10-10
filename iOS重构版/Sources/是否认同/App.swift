@@ -26,8 +26,14 @@ struct AERTEXApp: App {
                     AERTEXLoginView()
 
                 case .signedIn:
-                    AERTEXRootView()
-                        .task {
+                    Group {
+                        if UIDevice.current.userInterfaceIdiom == .pad {
+                            AERTEXPadRootView()
+                        } else {
+                            AERTEXRootView()
+                        }
+                    }
+                    .task {
                             // Preserve the module's local streak/snapshot data when launching AERTEX.
                             runtime.checkIn(amount: DebtEngine.amount(on: Date(), preferences: preferences))
                         }

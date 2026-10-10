@@ -240,6 +240,7 @@ struct AERTEXIntelligenceNativeView: View {
 struct AERTEXConversationNativeView: View {
     @EnvironmentObject private var auth: AERTEXAuthStore
     @EnvironmentObject private var preferences: AppPreferences
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var currentId: String?
     @State private var messages: [AERTEXChatLine] = []
     @State private var modelConfig: AERTEXAIConfiguration?
@@ -324,6 +325,8 @@ struct AERTEXConversationNativeView: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             composer
+                .frame(maxWidth: sizeClass == .regular ? 980 : .infinity)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
                 .padding(.bottom, 6)
@@ -373,6 +376,8 @@ struct AERTEXConversationNativeView: View {
                 .padding(.horizontal, 15)
                 .padding(.top, 20)
                 .padding(.bottom, 18)
+                .frame(maxWidth: sizeClass == .regular ? 980 : .infinity)
+                .frame(maxWidth: .infinity)
                 .background {
                     GeometryReader { geometry in
                         Color.clear.preference(

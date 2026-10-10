@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - feat/aertex-ios-2-2-real-chat-glass-20261008
+      - fix/aertex-adhoc-signing-20261010
     paths:
       - "iOS重构版/**"
       - "watchOS/**"
@@ -112,6 +113,27 @@ jobs:
             }
           tail -n 35 "$RUNNER_TEMP/aertex-xcodebuild.log"
 
+      - name: Verify iPad-compatible iOS Simulator build
+        run: |
+          set -euo pipefail
+          # Both iPhone and iPad use the same application and bundle ID.
+          # An iPad's split workspace must compile for the simulator SDK,
+          # in addition to the physical-device build above.
+          xcodebuild \
+            -project "iOS重构版/AERTEX.xcodeproj" \
+            -scheme AERTEX \
+            -configuration Release \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/aertex-ipad-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build > "$RUNNER_TEMP/aertex-ipad-build.log" 2>&1 || {
+              tail -n 180 "$RUNNER_TEMP/aertex-ipad-build.log"
+              exit 1
+            }
+          test -s "$RUNNER_TEMP/aertex-ipad-derived/Build/Products/Release-iphonesimulator/AERTEX.app/AERTEX"
+          tail -n 18 "$RUNNER_TEMP/aertex-ipad-build.log"
+
       - name: Package unsigned IPA
         run: |
           set -euo pipefail
@@ -183,23 +205,32 @@ jobs:
           test -s dist/AERTEX-iphone-profile-match-unsigned.ipa
 
       - name: Prepare and verify locally sealed IPA for third-party re-signing
-        # Experimental source signature, not an installable Apple profile.
-        continue-on-error: true
+        # This is a local ad-hoc integrity test, not an Apple provisioning signature.
+        # On unsigned Xcode 26 device bundles, a direct parent sign misidentifies
+        # unsigned Assets.car and AppIcon resources as embedded code. The first
+        # recursive pass pre-seals them; then explicitly re-sign the parent.
+        # Do NOT use --deep for real Apple distribution/profile signing.
         run: |
           set -euo pipefail
           src="$RUNNER_TEMP/aertex-derived/Build/Products/Release-iphoneos/AERTEX.app"
           app="$RUNNER_TEMP/aertex-adhoc/Payload/AERTEX.app"
           mkdir -p "$RUNNER_TEMP/aertex-adhoc/Payload"
           ditto "$src" "$app"
-          # Sign nested watch bundle first, iOS containing bundle last.
-          # Never modify any Info.plist or Mach-O executable afterwards.
-          codesign --force --sign - --timestamp=none --generate-entitlement-der "$app/PlugIns/AERTEXWatch.app"
+          watch="$app/PlugIns/AERTEXWatch.app"
+          test -s "$watch/AERTEXWatch"
+          codesign --force --sign - --timestamp=none --generate-entitlement-der "$watch"
+          codesign --verify --strict --verbose=2 "$watch"
+          # Diagnostic pre-seal only. Confirmed on macos-26/Xcode 26.6.
+          codesign --force --deep --sign - --timestamp=none --generate-entitlement-der "$app"
           codesign --force --sign - --timestamp=none --generate-entitlement-der "$app"
-          codesign --verify --deep --strict --verbose=2 "$app"
+          # The sealed container must include a still-valid signed Watch.
+          codesign --verify --strict --verbose=2 "$watch"
+          codesign --verify --strict --verbose=2 "$app"
+          codesign -dv --verbose=4 "$watch" 2>&1 | grep -E 'Identifier=|CodeDirectory|Signature='
           codesign -dv --verbose=4 "$app" 2>&1 | grep -E 'Identifier=|CodeDirectory|Signature='
           ( cd "$RUNNER_TEMP/aertex-adhoc" && zip -qry "$GITHUB_WORKSPACE/dist/AERTEX-watch-adhoc-verified.ipa" Payload )
           test -s dist/AERTEX-watch-adhoc-verified.ipa
-          echo "This ad-hoc IPA is only a consistent source for re-signing; it cannot install by itself."
+          echo "Verified ad-hoc IPA: local integrity/re-signing source only; not device-installable."
 
       - name: Upload build log
         if: always()
@@ -209,6 +240,7 @@ jobs:
           path: |
             ${{ runner.temp }}/aertex-xcodebuild.log
             ${{ runner.temp }}/aertex-watch-build.log
+            ${{ runner.temp }}/aertex-ipad-build.log
           if-no-files-found: ignore
           retention-days: 7
 
@@ -222,14 +254,16 @@ jobs:
           retention-days: 7
 
       - name: Upload iPhone-only signing diagnostic IPA
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AERTEX-iphone-only-signing-test
           path: dist/AERTEX-iphone-only-unsigned.ipa
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Upload verified ad-hoc signing source
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AERTEX-watch-adhoc-signing-test
@@ -238,9 +272,10 @@ jobs:
           retention-days: 14
 
       - name: Upload unsigned IPA
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AERTEX-unsigned-iOS-app
           path: dist/AERTEX-unsigned.ipa
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
