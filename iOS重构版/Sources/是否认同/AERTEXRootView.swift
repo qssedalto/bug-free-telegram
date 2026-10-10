@@ -23,7 +23,7 @@ struct AERTEXService: Identifiable {
 
     var url: URL { URL(string: address)! }
 
-    // The URLs are retained only for Safari fallback / the Work web entry point.
+    // The URLs are retained only for explicit advanced browser fallbacks.
     // Studio, Intelligence and Watch now navigate into verified native API views.
     static let studio = AERTEXService(
         id: "studio", title: "AERTEX Studio",
@@ -35,6 +35,11 @@ struct AERTEXService: Identifiable {
         subtitle: "独立工作空间", symbol: "rectangle.3.group.fill",
         address: "https://work.qsseda.com"
     )
+    static let cash = AERTEXService(
+        id: "cash", title: "AERTEX Cash",
+        subtitle: "原生现金账本与收支记录", symbol: "banknote.fill",
+        address: "https://cash.qsseda.com"
+    )
     static let intelligence = AERTEXService(
         id: "intelligence", title: "AERTEX Intelligence",
         subtitle: "原生流式 AI 对话 · 数学公式", symbol: "sparkles",
@@ -45,11 +50,11 @@ struct AERTEXService: Identifiable {
         subtitle: "原生活动同步状态", symbol: "applewatch",
         address: "https://aw.qsseda.com"
     )
-    static let all = [studio, work, intelligence, watch]
+    static let all = [studio, work, intelligence, watch, cash]
 }
 
 /** A native SwiftUI destination for each supported first-party product.
- * Work remains an explicit Safari link until its own mobile API is ready.
+ * Work and Cash use first-party native API screens with explicit web fallback.
  */
 struct AERTEXServiceLink<LabelContent: View>: View {
     @EnvironmentObject private var tabChrome: AERTEXTabChrome
@@ -62,18 +67,16 @@ struct AERTEXServiceLink<LabelContent: View>: View {
     }
 
     var body: some View {
-        if service.id == "work" {
-            Link(destination: service.url, label: label)
-        } else {
-            NavigationLink(destination: destination
-                .onAppear { tabChrome.hidden = true }
-                .onDisappear { tabChrome.hidden = false }, label: label)
-        }
+        NavigationLink(destination: destination
+            .onAppear { tabChrome.hidden = true }
+            .onDisappear { tabChrome.hidden = false }, label: label)
     }
 
     @ViewBuilder private var destination: some View {
         switch service.id {
         case "studio": AERTEXStudioNativeView()
+        case "work": AERTEXWorkNativeView()
+        case "cash": AERTEXCashNativeView()
         case "intelligence": AERTEXIntelligenceNativeView()
         case "watch": AERTEXWatchNativeView()
         default: Text("服务暂不可用")
@@ -322,7 +325,7 @@ struct AERTEXHomeView: View {
                             .lineLimit(2)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         HStack {
-                            Text(service.id == "work" ? "网页服务" : "原生服务")
+                            Text("原生服务")
                             Spacer()
                             Image(systemName: "arrow.up.right")
                         }
@@ -392,7 +395,7 @@ struct AERTEXServicesView: View {
                     VStack(alignment: .leading, spacing: 7) {
                         AERTEXBrandedText("连接 AERTEX")
                             .font(.title2.weight(.bold))
-                        Text("Studio 工作台、Intelligence 原生 AI 对话和 Watch 同步状态均已接入原生 API；Work 暂时由 Safari 打开。")
+                        Text("Studio、Intelligence、Work 文档、Cash 账本与 Watch 活动数据均提供原生入口；高级 Work 协作、Cash 预算预测仍保留网页入口。")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -445,7 +448,7 @@ struct AERTEXServicesView: View {
                                     Text(service.subtitle)
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
-                                    Text(service.id == "work" ? "在 Safari 中打开" : "打开原生页面")
+                                    Text("打开原生页面")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }

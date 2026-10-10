@@ -10,6 +10,7 @@ struct AERTEXHubView: View {
     @State private var syncMessage: String?
     @State private var isSyncing = false
     @State private var confirmSignOut = false
+    @State private var showAccentPicker = false
     @State private var showEditName = false
     @State private var editedName = ""
 
@@ -64,6 +65,9 @@ struct AERTEXHubView: View {
         .presentationDetents([.large])
         .sheet(isPresented: $showEditName) {
             editNameSheet
+        }
+        .sheet(isPresented: $showAccentPicker) {
+            AERTEXAccentPickerView()
         }
         .alert("退出 AERTEX？", isPresented: $confirmSignOut) {
             Button("取消", role: .cancel) {}
@@ -246,7 +250,18 @@ struct AERTEXHubView: View {
                 Image(systemName: "checkmark.seal.fill")
                     .foregroundStyle(preferences.accentControlColor)
             }
-            AERTEXBrandedText("强调色跟随 AERTEX 主站；深浅模式跟随 iOS 系统。颜色请到主站调整，再返回 App 同步。")
+            Button {
+                showAccentPicker = true
+            } label: {
+                HStack {
+                    Label("修改 AERTEX 颜色", systemImage: "paintpalette")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                .frame(minHeight: 42)
+            }
+            .liquidGlassButtonStyle(prominent: true, tint: preferences.accentControlColor)
+            AERTEXBrandedText("可直接在 App 修改完整主站配色并保存至 AERTEX ID。深浅模式仍跟随 iOS 系统。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -263,7 +278,7 @@ struct AERTEXHubView: View {
             Divider()
             serviceLink("账户中心", subtitle: "修改账户及安全设置", icon: "person.crop.circle", url: "https://auth.qsseda.com/account")
             Divider()
-            serviceLink("主题与外观", subtitle: "颜色由主站统一管理", icon: "paintpalette", url: "https://qsseda.com/zh-cn/settings/appearance")
+            serviceLink("主站外观设置", subtitle: "管理网站专属外观选项", icon: "paintpalette", url: "https://qsseda.com/zh-cn/settings/appearance")
         }
         .padding(20)
         .liquidGlassSurface(cornerRadius: 24, tint: preferences.accentColor.opacity(0.055))
